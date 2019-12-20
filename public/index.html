@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome to Firebase Hosting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+  <title>IoT Canvas</title>
 
   <!-- update the version number as needed -->
   <script defer src="/__/firebase/7.6.1/firebase-app.js"></script>
@@ -16,14 +16,33 @@
 
 </head>
 <body>
-
-
   <div id="main">
-    <script src="js/sketch.js"></script>
-    <script>
-    new p5(sketch, 'main');
-    </script>
   </div>
+  <div class="sidebar">
+    <ul>
+      <li>
+        <input type="radio" id="mode1" name="mode" value="0" checked="checked">
+        <label for="mode1">Draw</label>
+      </li>
+      <li>
+        <input type="radio" id="mode2" name="mode" value="1">
+        <label for="mode2">Configure</label>
+      </li>
+      <li>
+        <input type="radio" id="mode3" name="mode" value="2">
+        <label for="mode3">Test</label>
+      </li>
+      <li style="width:100%;">
+        <div class="line">TEST</div>
+        <ul id="triggers" style="display:none;">
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <script src="js/sketch.js"></script>
+  <script> new p5(sketch, 'main');</script>
 
   <script>
   document.addEventListener('DOMContentLoaded', function() {

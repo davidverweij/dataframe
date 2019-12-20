@@ -1,5 +1,5 @@
-let sketch = function(p) {
-
+//P5.js sketch
+let sketch = function(p){
   // All the paths
   let paths = [];
   let LEDS = [];
@@ -10,78 +10,69 @@ let sketch = function(p) {
   // Where are we now and where were we?
   let current;
   // Size of the canvas
-  let size = [600, 400];
+  let size;
   // Size of a popup
   let popupSize;
   // spacing between LEDs
-  let spacing = 50;
-  // header and footer space
-  let header = 80;
-  // modes: 0 (idle), 1 (drawing), 2 (configuring), 3 (test)
-  let mode = 0;
-  let modeT = ["IDLE", "DRAW", "CONFIGURE", "TEST"];
+  let spacing = 40;
+
   // list of set interactivity
   let interactivity = [];
   let selectAction;
 
+  // GUI (buttons, etc)
+  // modes: 0 (drawing), 1 (configuring), 2 (test)
+  let mode = 0;
+  const moderadio = [
+    document.getElementById('mode1'),
+    document.getElementById('mode2'),
+    document.getElementById('mode3'),
+  ];
+  const triggers = document.getElementById('triggers');
+
 
   p.setup = function() {
+    size = [window.innerWidth, window.innerHeight];
     popupSize = [Math.round(size[0]*0.9), Math.round(size[1]*0.9)];
-    p.createCanvas(size[0], size[1] + header);
+    let canvas = p.createCanvas(size[0], size[1]);
+    canvas.id('p5Canvas');
     current = p.createVector(0, 0);
 
+    document.getElementById('p5Canvas').addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, false);
 
-    //header
-    button2 = p.createButton('mode');
-    button2.position(20, 20);
-    button2.mousePressed(p.increaseMode);
 
-    selectAction = p.createSelect();
-    selectAction.changed(p.executeInteract);
-    selectAction.position(250, 20);
-    selectAction.hide();
-    button3 = p.createButton('execute');
-    button3.position(150, 20);
-    button3.mousePressed(p.triggerInteractivity);
-    button3.hide();
+    // set GUI listeners
+    for (let radio of moderadio){
+      radio.addEventListener('click', () => {
+        mode = radio.value;
+
+        console.log("mode : " + mode);
+
+        // show or hide all triggeres
+        if (mode == 2) triggers.style.display = '';
+        else triggers.style.display = 'none';
+      })
+    }
 
     //create all LEDs
+
     let border = [size[0] % spacing, size[1] % spacing];
     if (border[0] == 0) border[0] = spacing / 2;
     if (border[1] == 0) border[1] = spacing / 2;
     for (let y = border[1]; y < size[1]; y += spacing) {
       for (let x = border[0]; x < size[0]; x += spacing) {
-        LEDS.push(new LED(x, y + header));
+        LEDS.push(new LED(x, y));
       }
     }
-
-
-
   }
 
-  p.increaseMode = function() {
-    mode = (mode + 1) % modeT.length;
-    if (mode == 3) {
-      selectAction.show();
-      button3.show();
-    } else {
-      selectAction.hide();
-      button3.hide();
-    }
-  }
-
-  p.executeInteract = function() {
-
-    // do something
-  }
-
-
-  p.draw = function() {
-    p.background(200);
+  draw = function() {
+    p.background(255);
     p.fill(0);
     p.noStroke();
 
-    p.text(modeT[mode], 100, 32);
 
 
     // If it's time for a new point
@@ -96,33 +87,39 @@ let sketch = function(p) {
     }
 
     // Draw all paths
-    if (mode == 1 || mode == 2) {
-      for (let i = 0; i < paths.length; i++) {
-        paths[i].display();
-      }
+    if (mode == 0 || mode == 1) {
+      for (let i = 0; i < paths.length; i++) paths[i].display();
     }
     // Draw all LEDs
-    for (let i = 0; i < LEDS.length; i++) {
-      LEDS[i].display();
-    }
+    for (let i = 0; i < LEDS.length; i++) LEDS[i].display();
 
   }
 
   // Start it up
   p.mousePressed = function() {
-    if (mode == 1 && p.mouseY > header) {
+
+    // start new drawing
+    if (mode == 0) {
       painting = true;
       paths.push(new Path(paths.length));
-    } else if (mode == 2 && p.mouseY > header && p.mouseY < (header + size[1]) && paths.length > 0) {
+    }
+
+    // possibly selected an existing area
+    else if (mode == 1 && paths.length > 0) {
       let gotIt = -1;
+      let point = p.createVector(p.mouseX, p.mouseY);
+      // work backwards through all areas (so the ones on top are checked first)
       for (let i = paths.length - 1; i > -1; i--) {
-        let point = p.createVector(p.mouseX, p.mouseY);
+        // check if the click point is within the area
         if (paths[i].contains(point)) {
           gotIt = i;
           break;
         }
       }
+
+      // yes, clicked on an existing area
       if (gotIt > -1) {
+        // ask for interactable input
         let interactInput = prompt("key", "");
         if (interactInput == null || interactInput == "") {
           console.log("User cancelled the prompt.");
@@ -131,6 +128,7 @@ let sketch = function(p) {
           if (colorInput == null || colorInput == "") {
             console.log("User cancelled the prompt.");
           } else {
+
             // add this 'link' to the list of interactivity options
 
             interactivity.push({
@@ -140,8 +138,7 @@ let sketch = function(p) {
               'active' :false,
             });
 
-            paths[gotIt].interactivity++;
-            selectAction.option(interactInput);
+            p.createTrigger(interactInput, gotIt);
           }
         }
       }
@@ -149,25 +146,44 @@ let sketch = function(p) {
 
   }
 
-  p.triggerInteractivity = function(){
-    let key = selectAction.value();
-    for (let i = 0; i < interactivity.length; i++){
-      if (interactivity[i].key == key){
-        interactivity[i].active = !interactivity[i].active;
+  // create a new element for in the DOM - I am not checking for duplicates at the moment
+  p.createTrigger = function(name, id){
 
-        // now let's find all the LED's that are linked with this id
-        for (let q = 0; q < LEDS.length; q++){
-          if (LEDS[q].areas.length > 0){
-            for (let w = 0; w < LEDS[q].areas.length; w++){
-              if (LEDS[q].areas[w] == interactivity[i].id){
-                if (interactivity[i].active) LEDS[q].color = interactivity[i].color;    // ideally we average out the color intended to be displayed
-                else LEDS[q].color = 'white';
+    let toggle = document.createElement("li");
+    let input = document.createElement("INPUT");
+    input.setAttribute("type","checkbox");
+    input.name = name;
+    input.value = id;
+    let label = document.createElement("LABEL")
+    label.htmlFor = name;
+    let innerLabel = document.createTextNode(name);
+    label.appendChild(innerLabel);
+    toggle.appendChild(input);
+    toggle.appendChild(label);
+
+    let list  = document.getElementById("triggers");
+    list.appendChild(toggle);
+
+    input.addEventListener('change', () => {
+      for (let i = 0; i < interactivity.length; i++){
+        if (interactivity[i].id == input.value){
+          interactivity[i].active = input.checked;
+
+          // now let's find all the LED's that are linked with this id
+          for (let q = 0; q < LEDS.length; q++){
+            if (LEDS[q].areas.length > 0){
+              for (let w = 0; w < LEDS[q].areas.length; w++){
+                if (LEDS[q].areas[w] == interactivity[i].id){
+                  if (interactivity[i].active) LEDS[q].color = interactivity[i].color;    // ideally we average out the color intended to be displayed
+                  else LEDS[q].color = 'white';
+                }
               }
             }
           }
         }
       }
-    }
+
+    })
   }
 
   p.mouseReleased = function() {
@@ -215,7 +231,7 @@ let sketch = function(p) {
           this.particles[i].display(this.particles[i + 1]);
         }
       } else {
-        p.fill(255, 100);
+        p.fill(100, 100);
         p.stroke(0, 100);
         let averagePos = [0, 0];
         p.beginShape();
@@ -224,15 +240,15 @@ let sketch = function(p) {
           averagePos[0] += this.particles[i].position.x;
           averagePos[1] += this.particles[i].position.y;
         }
-        p.endShape(p.CLOSE);
+        p.endShape(CLOSE);
         averagePos[0] = averagePos[0] / this.particles.length;
         averagePos[1] = averagePos[1] / this.particles.length;
-        p.textAlign(p.CENTER);
+        p.textAlign(CENTER);
         p.noStroke();
         p.fill(255);
 
         p.text(this.interactivity, averagePos[0], averagePos[1]);
-        p.textAlign(p.LEFT);
+        p.textAlign(LEFT);
       }
     }
 
@@ -254,7 +270,7 @@ let sketch = function(p) {
   // Particles along the path
   class Particle {
     constructor(position) {
-      this.position = p.createVector(position.x, position.y);
+      this.position = createVector(position.x, position.y);
     }
 
     // Draw particle and connect it with a line
@@ -282,25 +298,36 @@ let sketch = function(p) {
 
     // Draw LED
     display() {
-      if (this.on) p.fill(255, 255, 0);
-      else p.fill(this.color);
-      p.stroke(0);
-      p.ellipse(this.position.x, this.position.y, 8, 8);
-    }
+      if (this.color != 'white') {
+        p.noStroke();
+        p.fill(this.color);
+        p.ellipse(this.position.x, this.position.y, 8, 8);
 
-    // based on https://stackoverflow.com/a/8721483/7053198
-    contains(shape) {
-      let particleList = shape.particles;
-      let i, j, result = false;
-      for (i = 0, j = particleList.length - 1; i < particleList.length; j = i++) {
-        if ((particleList[i].position.y > this.position.y) != (particleList[j].position.y > this.position.y) &&
-        (this.position.x < (particleList[j].position.x - particleList[i].position.x) * (this.position.y - particleList[i].position.y) / (particleList[j].position.y - particleList[i].position.y) + particleList[i].position.x)) {
-          result = !result;
-        }
+        /*
+        for (let r = 17; r > 0; --r) {
+        fill(this.color,(255/17));
+        ellipse(this.position.x, this.position.y, r, r);
       }
-      if (result) this.areas.push(shape.id);
-
+      */
+    } else {
+      p.stroke(0, 100);
+      p.fill(this.color);
+      p.ellipse(this.position.x, this.position.y, 8, 8);
     }
   }
 
-};
+
+  // based on https://stackoverflow.com/a/8721483/7053198
+  contains(shape) {
+    let particleList = shape.particles;
+    let i, j, result = false;
+    for (i = 0, j = particleList.length - 1; i < particleList.length; j = i++) {
+      if ((particleList[i].position.y > this.position.y) != (particleList[j].position.y > this.position.y) &&
+      (this.position.x < (particleList[j].position.x - particleList[i].position.x) * (this.position.y - particleList[i].position.y) / (particleList[j].position.y - particleList[i].position.y) + particleList[i].position.x)) {
+        result = !result;
+      }
+    }
+    if (result) this.areas.push(shape.id);
+  }
+}
+}
