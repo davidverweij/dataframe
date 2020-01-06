@@ -5,29 +5,23 @@ let sketch = function(p){
   let LEDS = [];
   // Are we painting?
   let painting = false;
+  let paintmargin = 10; //avoids loads of points at the same spot
   // How long until the next circle
   let next = 500;
   // Where are we now and where were we?
-  let current;
+  let current_point;
   // Size of the canvas
   let size;
   // Size of a popup
   let popupSize;
   // spacing between LEDs
-  let spacing = 40;
-
+  let spacing = 50; // scale is 3 : 1 (one LED has 16.667 spacing)
+  // current LED setup for prototyping
+  let LEDmatrix = [9, 13];
   // list of set interactivity
   let interactivity = [];
   let selectAction;
 
-  // GUI (buttons, etc)
-  // modes: 0 (drawing), 1 (configuring), 2 (test)
-  let mode = 0;
-  const moderadio = [
-    document.getElementById('mode1'),
-    document.getElementById('mode2'),
-    document.getElementById('mode3'),
-  ];
   const triggers = document.getElementById('triggers');
 
 
@@ -36,39 +30,32 @@ let sketch = function(p){
     popupSize = [Math.round(size[0]*0.9), Math.round(size[1]*0.9)];
     let canvas = p.createCanvas(size[0], size[1]);
     canvas.id('p5Canvas');
-    current = p.createVector(0, 0);
+    current_point = p.createVector(0, 0);
+    previous_point = p.createVector(0, 0);
 
     document.getElementById('p5Canvas').addEventListener('touchmove', function(e) {
       e.preventDefault();
     }, false);
 
-
-    // set GUI listeners
-    for (let radio of moderadio){
-      radio.addEventListener('click', () => {
-        mode = radio.value;
-
-        console.log("mode : " + mode);
-
-        // show or hide all triggeres
-        if (mode == 2) triggers.style.display = '';
-        else triggers.style.display = 'none';
-      })
-    }
-
     //create all LEDs
-
-    let border = [size[0] % spacing, size[1] % spacing];
-    if (border[0] == 0) border[0] = spacing / 2;
-    if (border[1] == 0) border[1] = spacing / 2;
-    for (let y = border[1]; y < size[1]; y += spacing) {
-      for (let x = border[0]; x < size[0]; x += spacing) {
-        LEDS.push(new LED(x, y));
+    //let border = [size[0] % spacing, size[1] % spacing];
+    //if (border[0] == 0) border[0] = spacing / 2;
+    //if (border[1] == 0) border[1] = spacing / 2;
+    // for (let y = border[1]; y < size[1]; y += spacing) {
+    //   for (let x = border[0]; x < size[0]; x += spacing) {
+    //     LEDS.push(new LED(x, y));
+    //   }
+    // }
+    for (let y = 0; y < LEDmatrix[1]; y++){
+      for (let x = 0; x < LEDmatrix[0]; x++){
+        let ledX = x*spacing + (size[0] - (LEDmatrix[0]*spacing))/2;
+        let ledY = y*spacing + (size[1] - (LEDmatrix[1]*spacing))/2;
+        LEDS.push(new LED(ledX, ledY));
       }
     }
   }
 
-  draw = function() {
+  p.draw = function() {
     p.background(255);
     p.fill(0);
     p.noStroke();
@@ -76,74 +63,28 @@ let sketch = function(p){
 
 
     // If it's time for a new point
-    if (p.millis() > next && painting) {
+    if (painting && p.millis() > next && (p.abs(p.mouseX-current_point.x)>paintmargin || p.abs(p.mouseY-current_point.y)>paintmargin)) {
 
       // Grab mouse position
-      current.x = p.mouseX;
-      current.y = p.mouseY;
+      current_point.x = p.mouseX;
+      current_point.y = p.mouseY;
 
-      // Add new particle
-      paths[paths.length - 1].add(current);
+      paths[paths.length - 1].add(current_point);
+
+
     }
 
     // Draw all paths
-    if (mode == 0 || mode == 1) {
-      for (let i = 0; i < paths.length; i++) paths[i].display();
-    }
+    for (let i = 0; i < paths.length; i++) paths[i].display();
     // Draw all LEDs
     for (let i = 0; i < LEDS.length; i++) LEDS[i].display();
 
   }
 
-  // Start it up
   p.mousePressed = function() {
-
     // start new drawing
-    if (mode == 0) {
-      painting = true;
-      paths.push(new Path(paths.length));
-    }
-
-    // possibly selected an existing area
-    else if (mode == 1 && paths.length > 0) {
-      let gotIt = -1;
-      let point = p.createVector(p.mouseX, p.mouseY);
-      // work backwards through all areas (so the ones on top are checked first)
-      for (let i = paths.length - 1; i > -1; i--) {
-        // check if the click point is within the area
-        if (paths[i].contains(point)) {
-          gotIt = i;
-          break;
-        }
-      }
-
-      // yes, clicked on an existing area
-      if (gotIt > -1) {
-        // ask for interactable input
-        let interactInput = prompt("key", "");
-        if (interactInput == null || interactInput == "") {
-          console.log("User cancelled the prompt.");
-        } else {
-          let colorInput = prompt("color", "");
-          if (colorInput == null || colorInput == "") {
-            console.log("User cancelled the prompt.");
-          } else {
-
-            // add this 'link' to the list of interactivity options
-
-            interactivity.push({
-              'id': gotIt,
-              'key': interactInput,
-              'color': colorInput,
-              'active' :false,
-            });
-
-            p.createTrigger(interactInput, gotIt);
-          }
-        }
-      }
-    }
-
+    painting = true;
+    paths.push(new Path(paths.length));
   }
 
   // create a new element for in the DOM - I am not checking for duplicates at the moment
@@ -174,7 +115,7 @@ let sketch = function(p){
             if (LEDS[q].areas.length > 0){
               for (let w = 0; w < LEDS[q].areas.length; w++){
                 if (LEDS[q].areas[w] == interactivity[i].id){
-                  if (interactivity[i].active) LEDS[q].color = interactivity[i].color;    // ideally we average out the color intended to be displayed
+                  if (interactivity[i].active) LEDS[q].colors[0] = interactivity[i].color;    // ideally we average out the color intended to be displayed
                   else LEDS[q].color = 'white';
                 }
               }
@@ -191,8 +132,50 @@ let sketch = function(p){
     if (painting) {
       // close shape if more than 5 points
       let length = paths[paths.length - 1].particles.length;
+      //if the drawing has less than 4 points, we assume click (configure) instead of draw
       if (length < 5) {
-        paths.splice([paths.length - 1], 1);
+        paths.splice([paths.length - 1], 1); //remove recently added path
+
+        // if there are path, configure clicked area (if clicked in area)
+        if (paths.length > 0) {
+          let gotIt = -1;
+          let point = p.createVector(p.mouseX, p.mouseY);
+          // work backwards through all areas (so the ones on top are checked first)
+          for (let i = paths.length - 1; i > -1; i--) {
+            // check if the click point is within the area
+            if (paths[i].contains(point)) {
+              gotIt = i;
+              break;
+            }
+          }
+
+          // yes, clicked on an existing area
+          if (gotIt > -1) {
+            // ask for interactable input
+            let interactInput = prompt("key", "");
+            if (interactInput == null || interactInput == "") {
+              console.log("User cancelled the prompt.");
+            } else {
+              let colorInput = prompt("color", "");
+              if (colorInput == null || colorInput == "") {
+                console.log("User cancelled the prompt.");
+              } else {
+
+                // add this 'link' to the list of interactivity options
+
+                interactivity.push({
+                  'id': gotIt,
+                  'key': interactInput,
+                  'color': colorInput,
+                  'active' :false,
+                });
+
+                p.createTrigger(interactInput, gotIt);
+              }
+            }
+          }
+        }
+
       } else {
         paths[paths.length - 1].finishShape();
         for (let i = 0; i < LEDS.length; i++) {
@@ -240,15 +223,15 @@ let sketch = function(p){
           averagePos[0] += this.particles[i].position.x;
           averagePos[1] += this.particles[i].position.y;
         }
-        p.endShape(CLOSE);
+        p.endShape(p.CLOSE);
         averagePos[0] = averagePos[0] / this.particles.length;
         averagePos[1] = averagePos[1] / this.particles.length;
-        p.textAlign(CENTER);
+        p.textAlign(p.CENTER);
         p.noStroke();
         p.fill(255);
 
         p.text(this.interactivity, averagePos[0], averagePos[1]);
-        p.textAlign(LEFT);
+        p.textAlign(p.LEFT);
       }
     }
 
@@ -270,7 +253,7 @@ let sketch = function(p){
   // Particles along the path
   class Particle {
     constructor(position) {
-      this.position = createVector(position.x, position.y);
+      this.position = p.createVector(position.x, position.y);
     }
 
     // Draw particle and connect it with a line
@@ -293,15 +276,31 @@ let sketch = function(p){
     constructor(x, y) {
       this.position = p.createVector(x, y);
       this.areas = [];
-      this.color = 'white';
+      this.colors = [];
     }
 
     // Draw LED
     display() {
-      if (this.color != 'white') {
+      if (this.areas.length != 0) {
+
+        // TODO: get color input from user (color picker?)
+        // TODO: get LED's to respond to certain ID requests, and make them act on themselves, not set colors globally..
+        // I AM HERE
+
+        // mixing RGB by sum of squares - following https://sighack.com/post/averaging-rgb-colors-the-right-way
+        let r, g, b, num = 0; // the colors to 'mix'
+        for (num = 0; num < this.areas.length; num++){
+          r += pow(red(this.colors[num]),2);
+          g += pow(green(this.colors[num]),2);
+          b += pow(blue(this.colors[num]),2);
+        }
+        let finalColor = p.Color(sqrt(r/num),sqrt(g/num),sqrt(b/num));
+
         p.noStroke();
-        p.fill(this.color);
-        p.ellipse(this.position.x, this.position.y, 8, 8);
+        p.fill(finalColor);
+        p.rectMode(p.RADIUS); // Set rectMode to RADIUS
+        p.rect(this.position.x, this.position.y, spacing/2*.9, spacing/2*.9, spacing/6);
+        //p.ellipse(this.position.x, this.position.y, spa, 10);
 
         /*
         for (let r = 17; r > 0; --r) {
@@ -311,8 +310,8 @@ let sketch = function(p){
       */
     } else {
       p.stroke(0, 100);
-      p.fill(this.color);
-      p.ellipse(this.position.x, this.position.y, 8, 8);
+      p.fill(this.colors[0]);
+      p.ellipse(this.position.x, this.position.y, 2, 2);
     }
   }
 

@@ -2,6 +2,7 @@ html {
   position: fixed;
   overflow:hidden;
 }
+
 body {
   height: 100vh;
   width: 100vw;
@@ -20,6 +21,8 @@ body {
   width: 100%;
   cursor: default;
   touch-action: none;
+
+  /* took some CSS from http://jigsaudio.com/explore/ to disable drag input */
 
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
@@ -83,7 +86,6 @@ body {
 }
 
 .line {
-  border-top: 1px solid white;
   text-align: center;
   padding-top: 10px;
   font-size: 12px;
