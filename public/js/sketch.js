@@ -1,8 +1,7 @@
 //P5.js sketch
 let sketch = function(p){
-  // All the paths
-  let paths = [];
-  let LEDS = [];
+  // All the paths, leds and connected interactivities
+  let paths = [], LEDS = [], interactivity = [];
   // Are we painting?
   let painting = false;
   let paintmargin = 10; //avoids loads of points at the same spot
@@ -12,14 +11,11 @@ let sketch = function(p){
   let current_point;
   // Size of the canvas
   let size;
-  // Size of a popup
-  let popupSize;
   // spacing between LEDs
   let spacing = 50; // scale is 3 : 1 (one LED has 16.667 spacing)
   // current LED setup for prototyping
   let LEDmatrix = [9, 13];
-  // list of set interactivity
-  let interactivity = [];
+
   let selectAction;
 
   const triggers = document.getElementById('triggers');
@@ -27,7 +23,6 @@ let sketch = function(p){
 
   p.setup = function() {
     size = [window.innerWidth, window.innerHeight];
-    popupSize = [Math.round(size[0]*0.9), Math.round(size[1]*0.9)];
     let canvas = p.createCanvas(size[0], size[1]);
     canvas.id('p5Canvas');
     current_point = p.createVector(0, 0);
@@ -110,17 +105,10 @@ let sketch = function(p){
         if (interactivity[i].id == input.value){
           interactivity[i].active = input.checked;
 
-          // now let's find all the LED's that are linked with this id
           for (let q = 0; q < LEDS.length; q++){
-            if (LEDS[q].areas.length > 0){
-              for (let w = 0; w < LEDS[q].areas.length; w++){
-                if (LEDS[q].areas[w] == interactivity[i].id){
-                  if (interactivity[i].active) LEDS[q].colors[0] = interactivity[i].color;    // ideally we average out the color intended to be displayed
-                  else LEDS[q].color = 'white';
-                }
-              }
-            }
+            LEDS[i].updateTrigger(interactivity[i].id, interactivity[i].active);
           }
+
         }
       }
 
@@ -130,10 +118,9 @@ let sketch = function(p){
   p.mouseReleased = function() {
 
     if (painting) {
-      // close shape if more than 5 points
-      let length = paths[paths.length - 1].particles.length;
+
       //if the drawing has less than 4 points, we assume click (configure) instead of draw
-      if (length < 5) {
+      if (paths[paths.length - 1].particles.length < 5) {
         paths.splice([paths.length - 1], 1); //remove recently added path
 
         // if there are path, configure clicked area (if clicked in area)
@@ -160,31 +147,32 @@ let sketch = function(p){
               if (colorInput == null || colorInput == "") {
                 console.log("User cancelled the prompt.");
               } else {
-
-                // add this 'link' to the list of interactivity options
-
-                interactivity.push({
+                let newInteract = {
                   'id': gotIt,
                   'key': interactInput,
-                  'color': colorInput,
+                  'color': p.color(colorInput),
                   'active' :false,
-                });
+                }
+
+                interactivity.push(newInteract);
 
                 p.createTrigger(interactInput, gotIt);
+                for (let i = 0; i < LEDS.length; i++) {
+                  if (LEDS[i].contains(paths[gotIt])){
+                    LEDS[i].connect(newInteract); // update the LED to keep track of this new interactivity
+                  }
+                }
               }
             }
           }
         }
 
       } else {
+        // finish shape
         paths[paths.length - 1].finishShape();
-        for (let i = 0; i < LEDS.length; i++) {
-          LEDS[i].contains(paths[paths.length - 1]);
-        }
       }
       painting = false;
     }
-
   }
 
   // A Path is a list of particles
@@ -275,58 +263,73 @@ let sketch = function(p){
 
     constructor(x, y) {
       this.position = p.createVector(x, y);
-      this.areas = [];
-      this.colors = [];
+      this.triggerList = [];
+      this.color = p.color(0,0,0);
+    }
+
+    updateTrigger(id, active){
+      console.log(this.triggerList.length);
+      if (this.triggerList.length > 0){
+        for (let i = 0; i < this.triggerList.length; i++){
+          if (this.triggerList[i].id == id){  //found it
+            this.triggerList[i].active = active;
+            break;
+          }
+        }
+      }
+      this.updateColor();
+    }
+
+    updateColor(){
+      let size = this.triggerList.length;
+      let newColor = p.color(0,0,0,0);
+      if (size > 0){
+        let r = 0, g = 0, b = 0, num = 0; // the colors to 'mix'
+        for (let i = 0; i<size; i++){
+          if (this.triggerList[i].active){
+            num++
+            // mixing RGB by sum of squares - following https://sighack.com/post/averaging-rgb-colors-the-right-way
+            r += p.pow(p.red(this.triggerList[i].color),2);
+            g += p.pow(p.green(this.triggerList[i].color),2);
+            b += p.pow(p.blue(this.triggerList[i].color),2);
+          }
+        }
+        if (num!= 0) newColor = p.color(p.sqrt(r/num),p.sqrt(g/num),p.sqrt(b/num),1);
+        console.log("updated color to: " + newColor);
+      }
+      this.color = newColor;
     }
 
     // Draw LED
     display() {
-      if (this.areas.length != 0) {
-
-        // TODO: get color input from user (color picker?)
-        // TODO: get LED's to respond to certain ID requests, and make them act on themselves, not set colors globally..
-        // I AM HERE
-
-        // mixing RGB by sum of squares - following https://sighack.com/post/averaging-rgb-colors-the-right-way
-        let r, g, b, num = 0; // the colors to 'mix'
-        for (num = 0; num < this.areas.length; num++){
-          r += pow(red(this.colors[num]),2);
-          g += pow(green(this.colors[num]),2);
-          b += pow(blue(this.colors[num]),2);
-        }
-        let finalColor = p.Color(sqrt(r/num),sqrt(g/num),sqrt(b/num));
-
+      if (p.alpha(this.color) == 0.0){
         p.noStroke();
-        p.fill(finalColor);
+        p.fill(this.color);
         p.rectMode(p.RADIUS); // Set rectMode to RADIUS
         p.rect(this.position.x, this.position.y, spacing/2*.9, spacing/2*.9, spacing/6);
-        //p.ellipse(this.position.x, this.position.y, spa, 10);
-
-        /*
-        for (let r = 17; r > 0; --r) {
-        fill(this.color,(255/17));
-        ellipse(this.position.x, this.position.y, r, r);
-      }
-      */
-    } else {
-      p.stroke(0, 100);
-      p.fill(this.colors[0]);
-      p.ellipse(this.position.x, this.position.y, 2, 2);
-    }
-  }
-
-
-  // based on https://stackoverflow.com/a/8721483/7053198
-  contains(shape) {
-    let particleList = shape.particles;
-    let i, j, result = false;
-    for (i = 0, j = particleList.length - 1; i < particleList.length; j = i++) {
-      if ((particleList[i].position.y > this.position.y) != (particleList[j].position.y > this.position.y) &&
-      (this.position.x < (particleList[j].position.x - particleList[i].position.x) * (this.position.y - particleList[i].position.y) / (particleList[j].position.y - particleList[i].position.y) + particleList[i].position.x)) {
-        result = !result;
+      } else {
+        p.stroke(0, 100);
+        p.fill(this.color);
+        p.ellipse(this.position.x, this.position.y, 2, 2);
       }
     }
-    if (result) this.areas.push(shape.id);
+
+
+    // based on https://stackoverflow.com/a/8721483/7053198
+    contains(shape) {
+      let particleList = shape.particles;
+      let i, j, result = false;
+      for (i = 0, j = particleList.length - 1; i < particleList.length; j = i++) {
+        if ((particleList[i].position.y > this.position.y) != (particleList[j].position.y > this.position.y) &&
+        (this.position.x < (particleList[j].position.x - particleList[i].position.x) * (this.position.y - particleList[i].position.y) / (particleList[j].position.y - particleList[i].position.y) + particleList[i].position.x)) {
+          result = !result;
+        }
+      }
+      return result;
+    }
+
+    connect(interactivity){
+      this.triggerList.push({'id':interactivity.id, 'color':interactivity.color, 'active':interactivity.active});
+    }
   }
-}
 }
