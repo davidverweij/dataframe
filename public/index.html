@@ -7,15 +7,24 @@
 
   <!-- update the version number as needed -->
   <script defer src="/__/firebase/7.6.1/firebase-app.js"></script>
+
   <!-- include only the Firebase features as you need -->
   <script defer src="/__/firebase/7.6.1/firebase-auth.js"></script>
+  <script defer src="/__/firebase/7.6.2/firebase-database.js"></script>
+
   <!-- initialize the SDK after all desired features are loaded -->
   <script defer src="/__/firebase/init.js"></script>
+
+  <!-- Firebase UI setup for authenticating users -->
+  <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css" />
+
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="js/p5.js"></script>
 
 </head>
 <body>
+  <div id="firebaseui-auth-container"></div>
   <div id="main">
   </div>
   <div class="sidebar">
@@ -30,29 +39,136 @@
   </div>
 
   <script src="js/sketch.js"></script>
-  <script> new p5(sketch, 'main');</script>
-
   <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-    // // The Firebase SDK is initialized and available here!
-    //
-    // firebase.auth().onAuthStateChanged(user => { });
-    // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-    // firebase.messaging().requestPermission().then(() => { });
-    // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-    //
-    // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
 
-    try {
-      let app = firebase.app();
-      let features = ['auth', 'database', 'messaging', 'storage'].filter(feature => typeof app[feature] === 'function');
-      //document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
-    } catch (e) {
-      console.error(e);
-      //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
+  let matrix = [];
+  let matrixsize = {};
+
+  loadData = function(){
+
+    var user = firebase.auth().currentUser;
+
+    return firebase.database().ref('users/' + user.uid).once('value')
+    .then(function(snapshot) {
+      if (snapshot.val() == null) { // create new user
+
+
+        //populate matrix array (just once?)
+        let temp = [];
+        for (let i = 0; i < 120; i++) temp[i] = [0,0,0,0];
+
+        /*
+        return firebase.database().ref('matrices/tell-degree-stop').set({
+        LED: temp,
+        size: {width: 9, height: 13},
+      }).then(
+      firebase.database().ref('users/' + user.uid).set({
+      email: user.email,
+      matrixref: "tell-degree-stop",
+    })
+  ).then(function() {return "";});
+  */
+} else {
+  return snapshot.val().matrixref;
+}
+})
+.then(function(matrixref){
+  console.log(matrixref)
+  if (matrixref != ""){
+    return firebase.database().ref('matrices/' + matrixref).once('value').then(function(snapshot){
+      let content = snapshot.val();
+      matrixsize = content.size;
+      matrix = content.LED;
+  /*
+      console.log("Found a total of " + snapshot.numChildren() + " LEDs");
+      let iterator = 0;
+      content.LED.forEach(function(oneled){
+        // assuming we are working with a string here!
+        matrix[iterator] = data.val();
+        iterator++
+
+        //console.log("LED " + data.key + ' will be ' + data.val());
+      });
+      */
+      new p5(sketch, 'main');
+    });
+  } else {
+
+  }
+
+})
+};
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+  // // The Firebase SDK is initialized and available here!
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      // User is signed in.
+      console.log(firebase.auth().currentUser.email + " is logged in!");
+
+      try {
+        loadData();
+
+      } catch (e) {
+        console.error(e);
+
+      }
+
+    } else {
+
+      // Initialize the FirebaseUI Widget using Firebase.
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+      var uiConfig = {
+        callbacks: {
+          signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+            var user = authResult.user;
+            var credential = authResult.credential;
+            var isNewUser = authResult.additionalUserInfo.isNewUser;
+            var providerId = authResult.additionalUserInfo.providerId;
+            var operationType = authResult.operationType;
+            // Do something with the returned AuthResult.
+            // Return type determines whether we continue the redirect automatically
+            // or whether we leave that to developer to handle.
+            ui.reset();
+            return false;
+          },
+        },
+        //signInSuccessUrl: 'localhost:5000',
+        signInOptions: [
+          // Leave the lines as is for the providers you want to offer your users.
+          firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        ],
+        tosUrl: '<your-tos-url>',
+        privacyPolicyUrl: function() {
+          window.location.assign('<your-privacy-policy-url>');
+        }
+      };
+
+      // The start method will wait until the DOM is loaded.
+      ui.start('#firebaseui-auth-container', uiConfig);
+      // User is signed out.
     }
   });
-  </script>
+  // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
+  // firebase.messaging().requestPermission().then(() => { });
+  // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
+  //
+  // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+
+  try {
+    let app = firebase.app();
+    let features = ['auth', 'database', 'messaging', 'storage'].filter(feature => typeof app[feature] === 'function');
+    //document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
+  } catch (e) {
+    console.error(e);
+    //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
+  }
+});
+</script>
 </body>
 </html>

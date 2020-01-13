@@ -14,7 +14,7 @@ let sketch = function(p){
   // spacing between LEDs
   let spacing = 50; // scale is 3 : 1 (one LED has 16.667 spacing)
   // current LED setup for prototyping
-  let LEDmatrix = [9, 13];
+  let LEDmatrix = [matrixsize.width, matrixsize.height];
 
   let selectAction;
 
@@ -27,6 +27,8 @@ let sketch = function(p){
     canvas.id('p5Canvas');
     current_point = p.createVector(0, 0);
     previous_point = p.createVector(0, 0);
+
+    console.log(matrix);
 
     document.getElementById('p5Canvas').addEventListener('touchmove', function(e) {
       e.preventDefault();
@@ -41,6 +43,25 @@ let sketch = function(p){
     //     LEDS.push(new LED(x, y));
     //   }
     // }
+    let iterator = 0;
+    for (let x = 0; x < LEDmatrix[0]; x++){
+      for (let y = 0; y < LEDmatrix[1]; y++){
+        let ledX = x*spacing + (size[0] - (LEDmatrix[0]*spacing))/2;
+        let ledY = y*spacing + (size[1] - (LEDmatrix[1]*spacing))/2;
+        LEDS.push(new LED(ledX, ledY, matrix[iterator]));
+        iterator++;
+      }
+      x++
+      if (x < LEDmatrix[0]){
+        for (let y = LEDmatrix[1]-1; y >= 0; y--){
+          let ledX = x*spacing + (size[0] - (LEDmatrix[0]*spacing))/2;
+          let ledY = y*spacing + (size[1] - (LEDmatrix[1]*spacing))/2;
+          LEDS.push(new LED(ledX, ledY, matrix[iterator]));
+          iterator++;
+        }
+      }
+    }
+/*
     for (let y = 0; y < LEDmatrix[1]; y++){
       for (let x = 0; x < LEDmatrix[0]; x++){
         let ledX = x*spacing + (size[0] - (LEDmatrix[0]*spacing))/2;
@@ -48,6 +69,7 @@ let sketch = function(p){
         LEDS.push(new LED(ledX, ledY));
       }
     }
+    */
   }
 
   p.draw = function() {
@@ -261,10 +283,10 @@ let sketch = function(p){
   // LED's in view
   class LED {
 
-    constructor(x, y) {
+    constructor(x, y, rgbmatrix) {
       this.position = p.createVector(x, y);
       this.triggerList = [];
-      this.color = p.color(0,0,0);
+      this.color = p.color('rgba(' + rgbmatrix[0] + ',' + rgbmatrix[1]+','+rgbmatrix[2]+',' +rgbmatrix[3]+ ')');
     }
 
     updateTrigger(id, active){
@@ -302,16 +324,15 @@ let sketch = function(p){
 
     // Draw LED
     display() {
-      if (p.alpha(this.color) == 0.0){
+
         p.noStroke();
         p.fill(this.color);
         p.rectMode(p.RADIUS); // Set rectMode to RADIUS
         p.rect(this.position.x, this.position.y, spacing/2*.9, spacing/2*.9, spacing/6);
-      } else {
+
         p.stroke(0, 100);
-        p.fill(this.color);
         p.ellipse(this.position.x, this.position.y, 2, 2);
-      }
+
     }
 
 
