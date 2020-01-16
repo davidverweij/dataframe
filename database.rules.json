@@ -6,6 +6,12 @@
       "$uid": {
         ".read": "$uid === auth.uid",
         ".write": "$uid === auth.uid"
+      },
+    },
+    "matrices": {
+      "$matrixId" : {
+        ".read" : "root.child('users').child(auth.uid).child('matrixref').val() === $matrixId",
+        ".write" : "root.child('users').child(auth.uid).child('matrixref').val() === $matrixId",
       }
     }
   }

@@ -39,66 +39,7 @@
   </div>
 
   <script src="js/sketch.js"></script>
-  <script>
-
-  let matrix = [];
-  let matrixsize = {};
-
-  loadData = function(){
-
-    var user = firebase.auth().currentUser;
-
-    return firebase.database().ref('users/' + user.uid).once('value')
-    .then(function(snapshot) {
-      if (snapshot.val() == null) { // create new user
-
-
-        //populate matrix array (just once?)
-        let temp = [];
-        for (let i = 0; i < 120; i++) temp[i] = [0,0,0,0];
-
-        /*
-        return firebase.database().ref('matrices/tell-degree-stop').set({
-        LED: temp,
-        size: {width: 9, height: 13},
-      }).then(
-      firebase.database().ref('users/' + user.uid).set({
-      email: user.email,
-      matrixref: "tell-degree-stop",
-    })
-  ).then(function() {return "";});
-  */
-} else {
-  return snapshot.val().matrixref;
-}
-})
-.then(function(matrixref){
-  console.log(matrixref)
-  if (matrixref != ""){
-    return firebase.database().ref('matrices/' + matrixref).once('value').then(function(snapshot){
-      let content = snapshot.val();
-      matrixsize = content.size;
-      matrix = content.LED;
-  /*
-      console.log("Found a total of " + snapshot.numChildren() + " LEDs");
-      let iterator = 0;
-      content.LED.forEach(function(oneled){
-        // assuming we are working with a string here!
-        matrix[iterator] = data.val();
-        iterator++
-
-        //console.log("LED " + data.key + ' will be ' + data.val());
-      });
-      */
-      new p5(sketch, 'main');
-    });
-  } else {
-
-  }
-
-})
-};
-</script>
+  <script src="js/iotcanvas.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

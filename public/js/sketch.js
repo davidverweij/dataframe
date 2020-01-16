@@ -32,6 +32,7 @@ let sketch = function(p){
 
     document.getElementById('p5Canvas').addEventListener('touchmove', function(e) {
       e.preventDefault();
+      console.log("touched it!");
     }, false);
 
     //create all LEDs
@@ -165,7 +166,11 @@ let sketch = function(p){
             if (interactInput == null || interactInput == "") {
               console.log("User cancelled the prompt.");
             } else {
-              let colorInput = prompt("color", "");
+
+              //let colorInput = prompt("color", "");
+              let colorInput = p.createColorPicker();
+              colorInput.click();
+
               if (colorInput == null || colorInput == "") {
                 console.log("User cancelled the prompt.");
               } else {
@@ -286,7 +291,7 @@ let sketch = function(p){
     constructor(x, y, rgbmatrix) {
       this.position = p.createVector(x, y);
       this.triggerList = [];
-      this.color = p.color('rgba(' + rgbmatrix[0] + ',' + rgbmatrix[1]+','+rgbmatrix[2]+',' +rgbmatrix[3]+ ')');
+      this.color = p.color('#' + rgbmatrix);
     }
 
     updateTrigger(id, active){
