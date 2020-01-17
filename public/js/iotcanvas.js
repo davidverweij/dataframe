@@ -28,11 +28,20 @@ led[i].b = decodeNibble(data[offset + 4]) * 16 + decodeNibble(data[offset + 5]);
 }
 
 */
+let initialLoad = false;
+let p5sketch;     //reference to P5js sketch
 
-let matrix = [];
-let matrixsize = {};
+loadTestMode = function(){
+  p5sketch = new p5(sketch, 'main');
+
+  let tempMatrix = "ff0000551a8bff0000ff0100551a8b551a8bff0000ff0100ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff";
+  let tempSize = {width:9, height: 12};
+  p5sketch.updateMatrix(tempSize, tempMatrix);
+}
 
 loadData = function(){
+
+  p5sketch = new p5(sketch, 'main');
 
   var user = firebase.auth().currentUser;
 
@@ -53,18 +62,17 @@ loadData = function(){
   .then(function(matrixref){
     console.log(matrixref)
     if (matrixref != ""){
-      return firebase.database().ref('matrices/' + matrixref).once('value').then(function(snapshot){
+
+      // Attach a listener to the Matrix state. This way, we update the database and the webpage and LED matrix should update at similar speeds
+      // This is alternative to update the visual on screen and then update the database.
+
+      return firebase.database().ref('matrices/' + matrixref).on('value', function(snapshot){
         let content = snapshot.val();
-        matrixsize = content.size;
 
-        // splits the combined string into 6 character HEX values (which we can directly apply appending a #);
-        matrix = content.LED.match(/.{1,6}/g);
+        p5sketch.updateMatrix(content.size, content.LED);
 
-        new p5(sketch, 'main');
-
-        //console.log("LED " + data.key + ' will be ' + data.val());
+        let matrixsize = content.size;
       });
-
 
     }
   });

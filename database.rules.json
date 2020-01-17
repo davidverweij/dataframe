@@ -1,5 +1,6 @@
 // These rules grant access to a node matching the authenticated
 // user's ID from the Firebase auth token
+// the arduino has unrestricted access due the use of database secrets (root access)
 {
   "rules": {
     "users": {
