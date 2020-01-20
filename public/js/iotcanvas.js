@@ -35,8 +35,8 @@ loadTestMode = function(){
   p5sketch = new p5(sketch, 'main');
 
   let tempMatrix = "ff0000551a8bff0000ff0100551a8b551a8bff0000ff0100ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff";
-  let tempSize = {width:9, height: 12};
-  p5sketch.updateMatrix(tempSize, tempMatrix);
+  let tempSize = [9,13];
+  p5sketch.updateMatrix(tempSize, tempMatrix, false);
 }
 
 loadData = function(){
@@ -66,16 +66,22 @@ loadData = function(){
       // Attach a listener to the Matrix state. This way, we update the database and the webpage and LED matrix should update at similar speeds
       // This is alternative to update the visual on screen and then update the database.
 
+
+
       return firebase.database().ref('matrices/' + matrixref).on('value', function(snapshot){
         let content = snapshot.val();
 
-        p5sketch.updateMatrix(content.size, content.LED);
+        p5sketch.updateMatrix(content.size, content.LED, [window.innerWidth, window.innerHeight]);
 
         let matrixsize = content.size;
       });
 
     }
   });
+
+
+
+
 };
 
 /*  HELPER FUNCTIONS  */
@@ -98,16 +104,3 @@ let fullColorHex = function(r,g,b) {
   var blue = rgbToHex(b);
   return red+green+blue;
 };
-
-
-/*
-return firebase.database().ref('matrices/tell-degree-stop').set({
-LED: temp,
-size: {width: 9, height: 13},
-}).then(
-firebase.database().ref('users/' + user.uid).set({
-email: user.email,
-matrixref: "tell-degree-stop",
-})
-).then(function() {return "";});
-*/
