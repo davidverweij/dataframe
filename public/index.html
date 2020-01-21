@@ -37,90 +37,94 @@
     </ul>
   </div>
   <div id="main"></div>
-  <div class="footer">IoT CANVAS</div>
+  <div class="footer"> </div>
 
-
-
-  <script src="js/sketch.js"></script>
+  <script src="js/LEDS.js"></script>
+  <script src="js/PATHS.js"></script>
+  <script src="js/sketch_withselect.js"></script>
   <script src="js/iotcanvas.js"></script>
 
   <script>
-  setTimeout(() => {
-    loadTestMode();
-  }, 1000)
-  /*
+  // setTimeout(() => {
+  //   loadTestMode();
+  // }, 1000)
+
   document.addEventListener('DOMContentLoaded', function() {
-  // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-  // // The Firebase SDK is initialized and available here!
+    // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+    // // The Firebase SDK is initialized and available here!
 
-  firebase.auth().onAuthStateChanged(user => {
-  if (user) {
-  // User is signed in.
-  console.log(firebase.auth().currentUser.email + " is logged in!");
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        // User is signed in.
+        console.log(firebase.auth().currentUser.email + " is logged in!");
 
-  try {
-  // loadTestMode();
-  //loadData();
+        try {
 
-} catch (e) {
-console.error(e);
-
-}
-
-} else {
-
-// Initialize the FirebaseUI Widget using Firebase.
-var ui = new firebaseui.auth.AuthUI(firebase.auth());
-
-var uiConfig = {
-callbacks: {
-signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-var user = authResult.user;
-var credential = authResult.credential;
-var isNewUser = authResult.additionalUserInfo.isNewUser;
-var providerId = authResult.additionalUserInfo.providerId;
-var operationType = authResult.operationType;
-// Do something with the returned AuthResult.
-// Return type determines whether we continue the redirect automatically
-// or whether we leave that to developer to handle.
-ui.reset();
-return false;
-},
-},
-//signInSuccessUrl: 'localhost:5000',
-signInOptions: [
-// Leave the lines as is for the providers you want to offer your users.
-firebase.auth.EmailAuthProvider.PROVIDER_ID,
-],
-tosUrl: '<your-tos-url>',
-privacyPolicyUrl: function() {
-window.location.assign('<your-privacy-policy-url>');
-}
-};
-
-// The start method will wait until the DOM is loaded.
-ui.start('#firebaseui-auth-container', uiConfig);
-// User is signed out.
-}
-});
+          setTimeout(() => {
+              //loadData();
+              loadTestMode();
+          }, 1000)
 
 
-// firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-// firebase.messaging().requestPermission().then(() => { });
-// firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-//
-// // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+        } catch (e) {
+          console.error(e);
 
-try {
-let app = firebase.app();
-let features = ['auth', 'database', 'messaging', 'storage'].filter(feature => typeof app[feature] === 'function');
-//document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
-} catch (e) {
-console.error(e);
-//document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
-}
-});
-*/
+        }
+
+      } else {
+
+        // Initialize the FirebaseUI Widget using Firebase.
+        var ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+        var uiConfig = {
+          callbacks: {
+            signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+              var user = authResult.user;
+              var credential = authResult.credential;
+              var isNewUser = authResult.additionalUserInfo.isNewUser;
+              var providerId = authResult.additionalUserInfo.providerId;
+              var operationType = authResult.operationType;
+              // Do something with the returned AuthResult.
+              // Return type determines whether we continue the redirect automatically
+              // or whether we leave that to developer to handle.
+              ui.reset();
+              return false;
+            },
+          },
+          //signInSuccessUrl: 'localhost:5000',
+          signInOptions: [
+            // Leave the lines as is for the providers you want to offer your users.
+            firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          ],
+          tosUrl: '<your-tos-url>',
+          privacyPolicyUrl: function() {
+            window.location.assign('<your-privacy-policy-url>');
+          }
+        };
+
+        // The start method will wait until the DOM is loaded.
+        ui.start('#firebaseui-auth-container', uiConfig);
+        // User is signed out.
+      }
+    });
+
+
+    // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
+    // firebase.messaging().requestPermission().then(() => { });
+    // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
+    //
+    // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+
+    try {
+      let app = firebase.app();
+      let features = ['auth', 'database', 'messaging', 'storage'].filter(feature => typeof app[feature] === 'function');
+      //document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
+    } catch (e) {
+      console.error(e);
+      //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
+    }
+  });
+
 
 </script>
 </body>

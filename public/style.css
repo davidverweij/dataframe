@@ -15,6 +15,7 @@ body {
 }
 
 #main {
+  background: #e6e6e6;
   overflow: hidden;
   grid-row: 2/3;
   cursor: default;
@@ -36,11 +37,11 @@ body {
 
 .footer{
   grid-row: 3/4;
-  background-color: #999;
+  background-color: #e0e0e0;
 
 }
 .menu {
-  background-color: #999;
+  background-color: #e0e0e0;
   color: #fff;
   grid-row:1/2;
   padding: 5px;

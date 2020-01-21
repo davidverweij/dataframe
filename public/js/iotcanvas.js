@@ -36,7 +36,7 @@ loadTestMode = function(){
 
   let tempMatrix = "ff0000551a8bff0000ff0100551a8b551a8bff0000ff0100ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff";
   let tempSize = [9,13];
-  p5sketch.updateMatrix(tempSize, tempMatrix, false);
+  p5sketch.updateMatrix('something',tempSize, tempMatrix, false);
 }
 
 loadData = function(){
@@ -71,18 +71,26 @@ loadData = function(){
       return firebase.database().ref('matrices/' + matrixref).on('value', function(snapshot){
         let content = snapshot.val();
 
-        p5sketch.updateMatrix(content.size, content.LED, [window.innerWidth, window.innerHeight]);
+        p5sketch.updateMatrix(matrixref, [content.size.width, content.size.height], content.LED);
 
         let matrixsize = content.size;
       });
 
     }
   });
-
-
-
-
 };
+
+updateMatrixDatabase = function (matrixref, newMatrixString) {
+  return firebase.database().ref('matrices/' + matrixref).update({
+    'LED': newMatrixString
+  }, function(error) {
+    if (error) {
+      alert("Data could not be saved." + error);
+    } else {
+      alert("Data saved successfully.");
+    }
+  });
+}
 
 /*  HELPER FUNCTIONS  */
 
@@ -91,7 +99,7 @@ loadData = function(){
 let rgbToHex = function (colorvalue) {
   var hex = Number(colorvalue).toString(16);
   if (hex.length < 2) {
-       hex = "0" + hex;
+    hex = "0" + hex;
   }
   return hex;
 };

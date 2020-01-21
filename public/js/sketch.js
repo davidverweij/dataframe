@@ -14,7 +14,7 @@ let sketch = function(p){
   let paths = [], LEDS = [], interactivity = [];  // All the paths, leds and connected interactivities
 
   let painting = false; // Are we painting?
-  let paintmargin = 10; //avoids loads of points at the same spot
+  let paintmargin = 5; //avoids loads of points at the same spot
 
   let next = 500;       // How long until the next circle
 
@@ -25,7 +25,7 @@ let sketch = function(p){
   let LEDmatrixSize = [0,0];  // size of the LED matrix we are configuring
   let LEDmatrixString = "";  // keep a latest version of the STRING from the database, so we can re-render the matrix when needed.
   let LEDmatrixLength = 0;
-  let LEDsize = .8;
+  let LEDsize = .7;
 
   let resizeMatrix;       // variable to set timeout to recalc matrix (with delay)
 
@@ -44,7 +44,7 @@ let sketch = function(p){
   }
 
   p.draw = function() {
-    p.background(255);
+    p.background(230);
     p.fill(0);
     p.noStroke();
 
@@ -56,12 +56,6 @@ let sketch = function(p){
     }
 
     for (let i = 0; i < LEDS.length; i++) LEDS[i].display();    // Draw all LEDs
-
-    // p.noStroke();
-    // p.fill(255,255,255,150);
-    // p.rectMode(p.CORNER);
-    // p.rect(0,0,WINDOWsize[0],WINDOWsize[1]);
-
     for (let i = 0; i < paths.length; i++) paths[i].display();  // Draw all paths
 
   }
@@ -84,15 +78,45 @@ let sketch = function(p){
   }
 
   p.relativeToMatrix = function(position){
-    let rel_x = (position.x - WINDOWsize[0]/2) / LEDspacing;
-    let rel_y = (position.y - WINDOWsize[1]/2) / LEDspacing;
+    let rel_x = (position.x - WINDOWsize[0]/2 - LEDspacing/2) / LEDspacing;
+    let rel_y = (position.y - WINDOWsize[1]/2 - LEDspacing/2) / LEDspacing;
     return p.createVector(rel_x, rel_y);
   }
 
-  p.relativeToView = function(position){
-    let rel_x = position.x * LEDspacing + WINDOWsize[0]/2;
-    let rel_y = position.y * LEDspacing + WINDOWsize[1]/2;
+  p.relativeToView = function(position){   // margin is overridden for LEDs
+    let rel_x = position.x * LEDspacing + WINDOWsize[0]/2 + LEDspacing/2;
+    let rel_y = position.y * LEDspacing + WINDOWsize[1]/2 + LEDspacing/2;
     return p.createVector(rel_x, rel_y);
+  }
+
+  p.highlightLedsInPath = function(path){
+    let foundSomeLEDS = false;
+    let checkPath = true;
+
+    if (typeof(path) === 'undefined') checkPath = false;      // turn on all LEDS
+
+    for (let i = 0; i < LEDS.length; i++) {
+      if (!checkPath || LEDS[i].contains(path)){
+        foundSomeLEDS = true;
+        // this LED is in the shape - let's indicate we are working with this one!
+        LEDS[i].highlighting(true); // boolean highlightmode, boolean active
+      } else {
+        // make 'dim'
+        LEDS[i].highlighting(false); // highlight mode, but not active
+      }
+    }
+    return foundSomeLEDS;
+  }
+
+  p.highlightPaths = function(pathID){
+    let checkId = true;
+    if (typeof(pathID) === 'undefined') checkID = false;
+
+    for (let i = 0; i < paths.length; i++) {       // work backwards through all areas (so the ones on top are checked first)
+      if (!checkId) paths[i].highlighting(0);           // default
+      else if (i == pathID) paths[i].highlighting(1);   // 1 = highlight
+      else paths[i].highlighting(-1);                   // de-emphasize
+    }
   }
 
   p.updateMatrix = function(new_size = LEDmatrixSize, new_string = LEDmatrixString, new_window = false){    // default values if undefined: [], "", boolean
@@ -118,13 +142,13 @@ let sketch = function(p){
       let iterator = 0;
       for (let x = 0; x < LEDmatrixSize[0]; x++){
         for (let y = 0; y < LEDmatrixSize[1]; y++){
-          LEDS.push(new LED(x - (LEDmatrixSize[0]/2), y - (LEDmatrixSize[1]/2), new_array[iterator]));
+          LEDS.push(new LED(x - (LEDmatrixSize[0]/2), y - (LEDmatrixSize[1]/2), new_array[iterator], LEDsize, LEDspacing, p));
           iterator++;
         }
         x++;
         if (x < LEDmatrixSize[0]){
           for (let y = LEDmatrixSize[1]-1; y >= 0; y--){
-            LEDS.push(new LED(x - (LEDmatrixSize[0]/2), y - (LEDmatrixSize[1]/2), new_array[iterator]));
+            LEDS.push(new LED(x - (LEDmatrixSize[0]/2), y - (LEDmatrixSize[1]/2), new_array[iterator], LEDsize, LEDspacing, p));
             iterator++;
           }
         }
@@ -141,7 +165,7 @@ let sketch = function(p){
     // wait 1 second for any windowsize changes (by overriding any ongoing windowchanges)
     window.clearTimeout(resizeMatrix);
     resizeMatrix = window.setTimeout(function(){
-        p.updateMatrix(LEDmatrixSize, LEDmatrixString, true);
+      p.updateMatrix(LEDmatrixSize, LEDmatrixString, true);
     }, 500);
   }
 
@@ -181,191 +205,48 @@ let sketch = function(p){
 
   p.screenPressed = function() {
     painting = true;
-    paths.push(new Path(paths.length)); // start new drawing
+    paths.push(new Path(paths.length, p));                  // start new path
   }
 
   p.screenReleased = function() {
     if (painting) {
 
-      //if the drawing has less than 4 points, we assume click (configure) instead of draw
-      if (paths[paths.length - 1].particles.length < 5) {
-        paths.splice([paths.length - 1], 1); //remove recently added path
+      if (paths[paths.length - 1].particles.length < 5) {    // if the drawing has less than 4 points, we assume click (configure) instead of draw
+        paths.splice([paths.length - 1], 1);                 // remove recently added path
 
-        // if there are paths, configure clicked area (if clicked in area)
-        if (paths.length > 0) {
+        if (paths.length > 0) {                              // if there are paths, configure clicked area (if clicked in area)
           let gotIt = -1;
-          let point = p.createVector(p.mouseX, p.mouseY);
-          // work backwards through all areas (so the ones on top are checked first)
-          for (let i = paths.length - 1; i > -1; i--) {
-            // check if the click point is within the area
-            if (paths[i].contains(point)) {
+          let point = p.relativeToMatrix(p.createVector(p.mouseX, p.mouseY));
+
+          for (let i = paths.length - 1; i > -1; i--) {       // work backwards through all areas (so the ones on top are checked first)
+            if (paths[i].contains(point) && !gotIt > -1) {    // check if the click point is within the path, and only act upon the zone 'on top'
               gotIt = i;
-              break;
+              p.highlightLedsInPath(paths[i]);                // highlight zone and it's LED's
             }
           }
 
-          // yes, clicked on an existing area
-          if (gotIt > -1) {
-            // ask for interactable input
-            let interactInput = prompt("key", "");
-            if (interactInput == null || interactInput == "") {
-              console.log("User cancelled the prompt.");
-            } else {
+          if (gotIt > -1) {                         // yes, clicked on an existing area
+            p.highlightPaths(gotIt);                // (pathID) highlight this path, de-emphasize others
+            p.highlightLedsInPath(paths[gotIt]);    // highlight the LEDS in this path
+          } else {                                  // we clicked away from any zones!
 
-              //let colorInput = prompt("color", "");
-              let colorInput = p.createColorPicker();
-              colorInput.click();
-
-              // See for how to click a DOM HTML element https://stackoverflow.com/questions/29676017/open-browser-standard-colorpicker-with-javascript-without-type-color
-
-              if (colorInput == null || colorInput == "") {
-                console.log("User cancelled the prompt.");
-              } else {
-                let newInteract = {
-                  'id': gotIt,
-                  'key': interactInput,
-                  'color': p.color(colorInput),
-                  'active' :false,
-                }
-
-                interactivity.push(newInteract);
-
-                p.createTrigger(interactInput, gotIt);
-                for (let i = 0; i < LEDS.length; i++) {
-                  if (LEDS[i].contains(paths[gotIt])){
-                    LEDS[i].connect(newInteract); // update the LED to keep track of this new interactivity
-                  }
-                }
-              }
-            }
           }
         }
 
       } else {
-        // finish shape
-        paths[paths.length - 1].finishShape();
+
+        paths[paths.length - 1].finishShape();  // finish shape
         let foundLEDs = false;
-        for (let i = 0; i < LEDS.length; i++) {
-          if (LEDS[i].contains(paths[paths.length - 1])){
-            foundLEDs = true;
-            break;
-          }
-        }
+        foundLEDs = p.highlightLedsInPath(paths[paths.length-1]); // highlight zone and it's LED's, returns false if none is found
         if (!foundLEDs) {   // if the path is not drawn on some LEDS, remove it
-          //paths.splice([paths.length - 1], 1);
+          paths.splice([paths.length - 1], 1);
+          p.highlightLedsInPath();  // leave empty = turn all LEDS on again.
         }
       }
       painting = false;
-    }
-  }
 
-  // A Path is a list of particles
-  class Path {
-    constructor(id) {
-      this.particles = [];
-      this.finished = false;
-      this.id = id;
-      this.interactivity = 1;
-    }
-
-    add(position) {
-      this.particles.push(position);
-    }
-
-    // close the path
-    finishShape() {
-      this.finished = true;
-    }
-
-    // Display plath
-    display() {
-      if (this.finished) p.fill(255, 150);
-      else p.noFill();
-      p.strokeWeight(1);
-      p.stroke(0);
-      p.beginShape();
-      for (let i = this.particles.length - 1; i >= 0; i--) {
-        let windowPos = p.relativeToView(this.particles[i]);
-        p.vertex(windowPos.x, windowPos.y);
-      }
-      if (this.finished) p.endShape(p.CLOSE);
-      else p.endShape();
-    }
-
-    // based on https://stackoverflow.com/a/8721483/7053198
-    contains(point) {
-      let i, j, result = false;
-      for (i = 0, j = this.particles.length - 1; i < this.particles.length; j = i++) {
-        if ((this.particles[i].y > point.y) != (this.particles[j].y > point.y) &&
-        (point.x < (this.particles[j].x - this.particles[i].x) * (point.y - this.particles[i].y) / (this.particles[j].y - this.particles[i].y) + this.particles[i].x)) {
-          result = !result;
-        }
-      }
-      return result;
-    }
-
-  }
-
-  // LED's in view
-  class LED {
-
-    constructor(x, y, rgbmatrix) {
-      this.position = p.createVector(x, y);
-      this.triggerList = [];
-      this.color = p.color('#' + rgbmatrix);
-    }
-
-    updateTrigger(id, active){
-      console.log(this.triggerList.length);
-      if (this.triggerList.length > 0){
-        for (let i = 0; i < this.triggerList.length; i++){
-          if (this.triggerList[i].id == id){  //found it
-            this.triggerList[i].active = active;
-            break;
-          }
-        }
-      }
-      this.updateColor();
-    }
-
-    updateColor(rgbmatrix){
-      this.color = p.color('#' + rgbmatrix);
-    }
-
-    // Draw LED
-    display() {
-      let marg = (LEDspacing*(1-LEDsize)/2);
-      let windowPos = p.relativeToView(this.position);
-
-      p.noStroke();
-      p.fill(this.color);
-      p.rectMode(p.CORNER); // Set rectMode to RADIUS
-
-      p.rect(windowPos.x + marg, windowPos.y + marg, LEDspacing*LEDsize, LEDspacing*LEDsize, LEDspacing/10);
-
-      p.stroke(0, 100);
-      p.strokeWeight(1);
-      p.fill(255);
-      p.ellipse(windowPos.x + LEDspacing/2, windowPos.y + LEDspacing/2, 2, 2);
-
-    }
-
-
-    // based on https://stackoverflow.com/a/8721483/7053198
-    contains(shape) {
-      let particleList = shape.particles;
-      let i, j, result = false;
-      for (i = 0, j = particleList.length - 1; i < particleList.length; j = i++) {
-        if ((particleList[i].y > this.position.y) != (particleList[j].y > this.position.y) &&
-        (this.position.x < (particleList[j].x - particleList[i].x) * (this.position.y - particleList[i].y) / (particleList[j].y - particleList[i].y) + particleList[i].x)) {
-          result = !result;
-        }
-      }
-      return result;
-    }
-
-    connect(interactivity){
-      this.triggerList.push({'id':interactivity.id, 'color':interactivity.color, 'active':interactivity.active});
+    } else {
+      // we are not painting
     }
   }
 }
