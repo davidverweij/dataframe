@@ -6,6 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 firebase-debug.log*
 
+# sensitivedata
+arduino/arduino_secrets.h
+
 # Firebase cache
 .firebase/
 package-lock.json
