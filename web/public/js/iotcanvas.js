@@ -1,31 +1,4 @@
-/*
-TODO: Convert RGBW to 2 character HEX values, to be stored in the database.
 
-Arduino code:
-
-
-
-// RRGGBBRRGGBBRRGGBBRRGGBBRRGGBBRRGGBBRRGGBBRRGGBBRRGGBBRRGGBB
-
-
-
-int decodeNibble(char value) {
-if (value >= '0' && value <= '9') return value - '0';
-if (value >= 'A' && value <= 'Z') return value - 'A';
-if (value >= 'a' && value <= 'z') return value - 'a';
-return -1;
-}
-
-int numLeds = strlen(data) / 6;
-
-for (i = 0; i < numLeds; i++) {
-int offset = i * 6;
-led[i].r = decodeNibble(data[offset + 0]) * 16 + decodeNibble(data[offset + 1]);
-led[i].g = decodeNibble(data[offset + 2]) * 16 + decodeNibble(data[offset + 3]);
-led[i].b = decodeNibble(data[offset + 4]) * 16 + decodeNibble(data[offset + 5]);
-}
-
-*/
 let initialLoad = false;
 let p5sketch; //reference to P5js sketch
 
