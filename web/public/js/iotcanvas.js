@@ -1,8 +1,6 @@
+let p5sketch; //  global reference to P5js sketch
 
-let initialLoad = false;
-let p5sketch; //reference to P5js sketch
-
-loadTestMode = function() {
+loadData = function() {
   p5sketch = new p5(sketch, "main");
 
   let tempMatrix =
@@ -11,9 +9,7 @@ loadTestMode = function() {
   p5sketch.updateMatrix("something", tempSize, tempMatrix, false);
 };
 
-loadData = function() {
-  p5sketch = new p5(sketch, "main");
-
+getMatrixFromDatabase = function() {
   var user = firebase.auth().currentUser;
 
   return firebase

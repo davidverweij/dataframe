@@ -4,22 +4,35 @@
    Based on https://github.com/mobizt using Firebase Realtime Database
    https://github.com/mobizt/Firebase-Arduino-WiFi101
 
+   - Stream + Get/Set method works inconsistent together
+   - Note: typos in database references do not throw errors (becomes unresponsive)
+   - Firebase.get() cannot (by default) retreive more than 400 Bytes of data
+      - LED Matrix string = # LEDS * 6 bytes (e.g. 120 LEDs is 720 bytes)
+      - Quick fix: local copy of library with increased "FIREBASE_RESPONSE_SIZE" to 1000
+          - Costs more memory allocation, but should allow for 720 bytes + header. Might need to increase for larger LED matrices.
+   - Current solution: Firebase.get integer with unix of latest update (4 bytes // TODO: check if not unsigned_long (then 8 bytes))
+      - if new update (newer unix), get full String (>720 bytes);
+   - Polling frequency = response time. (e.g. 1.5 seconds per poll, ~1.5 seconds response time between save and display).
 */
-
-//Example shows how to connect to Firebase RTDB and get stream connection
 
 //Required WiFi101 Library for Arduino from https://github.com/arduino-libraries/WiFi101
 
-#include "src/Firebase_Arduino_based_on_WiFi101/src/Firebase_Arduino_WiFi101.h"   // note, this is locally stored because we increased the buffer size (defined in the header)
+#include "src/Firebase_Arduino_based_on_WiFi101/src/Firebase_Arduino_WiFi101.h"   // locally stored version of Firebase_Arduino_WiFi101 library, with increased FIREBASE_RESPONSE_SIZE
 
-
-// easy trace/debug library
 #define ARDUINOTRACE_ENABLE 1  // Disable (0) or enable (1) all traces
-#include <ArduinoTrace.h>
-
+#include <ArduinoTrace.h>      // Easy trace / variable dump library (use TRACE() or DUMP(var))
 
 #include "arduino_secrets.h"
-// contains sensitive data
+//  arduino_secrets.h contains:
+//
+//  #define FIREBASE_HOST "YOUR_FIREBASE_PROJECT.firebaseio.com"
+//  #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
+//  #define WIFI_SSID "YOUR_WIFI_AP"
+//  #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+//  #define updatepath "/PATH/TO/UPDATE/UNIX TIME/FLAG"
+//  #define LEDpath "/PATH/TO/STRING/FOR/ALL/LEDS"
+//
+//  arduino_secrets.h is added to .gitignore
 
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
@@ -28,31 +41,28 @@
 
 #define PIN 6 // LED strip data pin
 
-//Define Firebase data object
-FirebaseData firebaseData;
+FirebaseData firebaseData;                              // Define Firebase data object
+Adafruit_NeoPixel strip =
+  Adafruit_NeoPixel(120, PIN, NEO_RGBW + NEO_KHZ800);   // Depends on LEDstrip, see Adafruit Example Code
 
-// led strip prep - we are currently testing RGBW led strip of 2 meters (zigzaggin pattern)
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(120, PIN, NEO_RGBW + NEO_KHZ800);
+int potpin = 0;               // A potmeter to reduce overall brightness. Will replace with LDR (or alike)
+int potpinVal = 0;            // Potmeter reading result (to be multiplied with LED values)
+int prev_potpinVal = 0;       // Previous potmeter result
+int potpinDiff = 2;           // Prevent debouncing/jittering by having threshold for potmeter readings
 
-// added a potmeter to tune down overall brightness
-int potpin = 0; // reading the potmeter to reduce overall brightness
-int potpinVal = 0; // the result of reading the potpin
-int prev_potpinVal = 0; // history of potpin, to see when we need to update the LED
-int potpinDiff = 2; // difference needed to be flagged, prevents debouncing
-String matrixString = "";  // keep a local copy of the databse string
-int matrixSize[2] = {9, 13}; // size of the matrix;
-int totalLEDs;
-int matrix[120][4]; // 120 LEDs, with 4 values for RGBW
+String matrixString = "";     // keep a local copy of the database string for LED RGB valus
+int matrixSize[2] = {9, 13};  // size of the matrix we are currently working with;
+int totalLEDs;                // # of LEDS in the matrix, is size.x * size.y
+int matrix[117][4];           // 117 LEDs, with 4 values for RGBW
 
-int lastDatabaseChange = 0;   // track last time the database updated
-bool getNewData = false;
+int lastDatabaseChange = 0;   // track last time the database updated (unix time)
+bool getNewData = false;      // if newer value for lastDatabaseChange, flag for new data
 
-unsigned long getDataPrevMillis = 0;
-
+unsigned long getDataPrevMillis = 0;  // store last polling time
+int getDataThreshold = 1500;          // time in between polling
 
 void setup()
 {
-
   Serial.begin(115200);
   delay(100);
   Serial.println();
@@ -102,9 +112,9 @@ void loop()
     prev_potpinVal = potpinVal;
   }
 
-  if (millis() - getDataPrevMillis > 1500) {
+  if (millis() - getDataPrevMillis > getDataThreshold) {
     getDataPrevMillis = millis();
-    
+
     if (Firebase.getInt(firebaseData, updatepath))
     {
       if (firebaseData.dataType() == "int") {

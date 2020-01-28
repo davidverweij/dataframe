@@ -34,13 +34,35 @@
     <div class="menu">
       <ul>
         <li>
-          <label class="switch">
-            <input id="drawmode" type="checkbox" checked />
-            <span class="slider round"></span>
-          </label>
+          <input id="testmode" type="checkbox" checked />
+          <label>Testmode</label>
         </li>
-        <li style="width:100%;">
-          <ul id="triggers"></ul>
+        <li>
+          <select id="zonesmode">
+            <option value="0">no</option>
+          </select>
+          <label>Zone</label>
+        </li>
+        <li>
+          <div class="switch-toggle">
+            <input id="switch-toggle-add" name="state-d" type="radio" checked="checked" />
+            <label for="switch-toggle-add" onclick="">ADD</label>
+
+            <input id="switch-toggle-remove" name="state-d" type="radio" checked="" />
+            <label for="switch-toggle-remove" class="disabled" onclick="">REMOVE</label>
+
+            <input id="switch-toggle-color" name="state-d" type="radio" />
+            <label for="switch-toggle-color" onclick="">COLOR</label>
+          </div>
+          <label>Zone Editor</label>
+        </li>
+        <li>
+          <input id="drawcolor" type="color" value="#ff0000" />
+          <label>Color</label>
+        </li>
+        <li>
+          <input id="updatemode" type="button" value="Update" />
+          <label>Database</label>
         </li>
       </ul>
     </div>
@@ -53,10 +75,6 @@
     <script src="js/iotcanvas.js"></script>
 
     <script>
-      // setTimeout(() => {
-      //   loadTestMode();
-      // }, 1000)
-
       document.addEventListener("DOMContentLoaded", function() {
         // // The Firebase SDK is initialized and available here!
 
@@ -67,8 +85,8 @@
 
             try {
               setTimeout(() => {
-                //loadData();
-                loadTestMode();
+                // get p5js running before calling functions
+                loadData();
               }, 1000);
             } catch (e) {
               console.error(e);

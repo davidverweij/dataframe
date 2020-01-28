@@ -34,6 +34,10 @@ class LED {
     this.color = this.p.color('#' + rgbmatrix);
   }
 
+  updateColorHex(hexcolor){
+    this.color = this.p.color(hexcolor);
+  }
+
   highlighting(mode) {  // false is dim, true is default
     this.highlight = mode;
   }
@@ -44,12 +48,16 @@ class LED {
     let windowPos = p.relativeToView(this.position);
 
     if (this.highlight){
+p.strokeWeight(2);
       p.stroke(0);
-      p.fill(this.color);
     } else {
+      p.strokeWeight(1);
       p.stroke(255);
-      p.noFill();
     }
+
+    //p.fill(this.color);
+    p.noFill();
+
 
     p.rectMode(p.CENTER);
     // or do we want a circle?....
@@ -69,7 +77,7 @@ class LED {
         return true;
       }
     }
-    
+
     return false;
   }
 

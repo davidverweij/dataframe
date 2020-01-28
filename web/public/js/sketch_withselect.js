@@ -17,7 +17,7 @@ let sketch = function(p) {
   let touch = false; // on setup we check if we work with a mobile device.
   let selecting = 0; // Are we selecting LEDs? (use millis to indicate unique identifyer)
   let previous_selecting = 0; // to see if we have a new click
-  let selectingmode = 0; // 0 is not yet defined (depends on first LED that is selected), 1 is selecting, -1 is deselecting (as kind of eraser mode)
+  let selectingmode = 0; // based on drawmode toggle button
   let selectingPath = [[]]; // selectable zones will be LEDmatrixLength long (adjusting values in an array is more efficient than adding / splicing)
 
   let lastDrawn = 0; // keep track of when drawn
@@ -39,8 +39,7 @@ let sketch = function(p) {
 
   let resizeMatrix; // variable to set timeout to recalc matrix (with delay)
 
-  const triggers = document.getElementById("triggers");
-  const drawmode = document.getElementById("drawmode");
+  let triggers, drawcolor, testmode, zonesmode, updatemode, drawmode = []; // UI listeners
 
   p.setup = function() {
     WINDOWsize = p.getCanvasSize();
@@ -55,11 +54,8 @@ let sketch = function(p) {
 
     touch = isMobileDevice(); // function in the iotcanvas.js
     console.log("touchmode: " + touch);
-  };
 
-  p.getCanvasSize = function() {
-    let div = document.getElementById("main");
-    return [div.offsetWidth, div.offsetHeight];
+    p.attachUI();
   };
 
   p.draw = function() {
@@ -93,17 +89,14 @@ let sketch = function(p) {
     p.fill(0);
     p.noStroke();
 
-    for (let i = 0; i < LEDS.length; i++) LEDS[i].display(); // Draw all LEDs
+    for (let i = 0; i < LEDS.length; i++) LEDS[i].display(); // Draw all LEDs with their default color;
   };
 
   p.mousePressed = function() {
     if (!touch) p.screenPressed();
-    return false;
   };
   p.touchStarted = function() {
     p.screenPressed();
-    //console.log("touch!!");
-    return false;
   };
 
   p.mouseReleased = function() {
@@ -113,8 +106,6 @@ let sketch = function(p) {
 
   p.touchEnded = function() {
     p.screenReleased();
-    //console.log("touch!!");
-    return false;
   };
 
   p.relativeToMatrix = function(position) {
@@ -128,6 +119,188 @@ let sketch = function(p) {
     let rel_x = position.x * LEDspacing + WINDOWsize[0] / 2 + LEDspacing / 2;
     let rel_y = position.y * LEDspacing + WINDOWsize[1] / 2 + LEDspacing / 2;
     return p.createVector(rel_x, rel_y);
+  };
+
+  p.windowResized = function() {
+    // wait 1 second for any windowsize changes (by overriding any ongoing windowchanges)
+    window.clearTimeout(resizeMatrix);
+    resizeMatrix = window.setTimeout(function() {
+      p.updateMatrix(LEDmatrixName, LEDmatrixSize, LEDmatrixString, true);
+    }, 500);
+  };
+
+  p.getCanvasSize = function() {
+    let div = document.getElementById("main");
+    return [div.offsetWidth, div.offsetHeight];
+  };
+
+  p.attachUI = function() {
+    //triggers = document.getElementById("triggers");
+    drawcolor = document.getElementById("drawcolor");
+    testmode = document.getElementById("testmode");
+    zonesmode = document.getElementById("zonesmode");
+    updatemode = document.getElementById("updatemode");
+
+    drawmode[0] = document.getElementById("switch-toggle-add");
+    drawmode[1] = document.getElementById("switch-toggle-remove");
+    drawmode[2] = document.getElementById("switch-toggle-color");
+
+    selectingcolor = drawcolor.value; // set the first time;
+    selectingmode = 0;
+    //testmode = testmode.checked;
+    //zonesmode = zonesmode.options[zonesmode.selectedIndex].value;
+
+    drawmode[0].addEventListener("change", () => {
+      if (drawmode[0].checked) selectingmode = 0;
+    });
+    drawmode[1].addEventListener("change", () => {
+      if (drawmode[1].checked) selectingmode = 1;
+    });
+    drawmode[2].addEventListener("change", () => {
+      if (drawmode[2].checked) selectingmode = 2;
+    });
+    drawcolor.addEventListener("input", () => {
+      selectingcolor = drawcolor.value;
+      let pathValue = zonesmode.options[zonesmode.selectedIndex].value;
+      for(let i = 0; i < paths[pathValue].length; i++){
+
+        LEDS[selectedLED].highlighting(true);
+      }
+
+    });
+    testmode.addEventListener("change", () => {
+      // change to realtime database data here!
+    });
+    zonesmode.addEventListener("change", () => {
+      // change to selecting zones here!
+      console.log("zone: " + zonesmode.options[zonesmode.selectedIndex].value + " is selected");
+    });
+    updatemode.addEventListener("click", () => {
+      let pathValue = zonesmode.options[zonesmode.selectedIndex].value;
+      console.log("Current selected path is " + pathValue + ", data:")
+      console.log(paths[pathValue]);
+    });
+  };
+
+  // create a new element for in the DOM - I am not checking for duplicates at the moment
+  p.createTrigger = function(name, id) {
+    let toggle = document.createElement("li");
+    let input = document.createElement("INPUT");
+    input.setAttribute("type", "checkbox");
+    input.name = name;
+    input.value = id;
+    let label = document.createElement("LABEL");
+    label.htmlFor = name;
+    let innerLabel = document.createTextNode(name);
+    label.appendChild(innerLabel);
+    toggle.appendChild(input);
+    toggle.appendChild(label);
+
+    let list = document.getElementById("triggers");
+    list.appendChild(toggle);
+
+    input.addEventListener("change", () => {
+      for (let i = 0; i < interactivity.length; i++) {
+        if (interactivity[i].id == input.value) {
+          interactivity[i].active = input.checked;
+
+          for (let q = 0; q < LEDS.length; q++) {
+            LEDS[i].updateTrigger(interactivity[i].id, interactivity[i].active);
+          }
+        }
+      }
+    });
+  };
+
+  p.screenPressed = function() {
+    selecting = p.millis();
+
+    current_point.x = p.mouseX;
+    current_point.y = p.mouseY; // Grab mouse position
+    previous_point = current_point.copy();
+
+    p.checkLEDhit(current_point);
+  };
+
+  p.checkLEDhit = function(clicked) {
+    let point = p.relativeToMatrix(clicked);
+    let x = Math.round(point.x + LEDmatrixSize[0] / 2);
+    let y = Math.round(point.y + LEDmatrixSize[1] / 2);
+    if (x >= 0 && x < LEDmatrixSize[0] && y >= 0 && y < LEDmatrixSize[1]) {
+      // we are within the grid! this should result in one possible anwer due to our rounding
+      let selectedLED;
+      if (x % 2) selectedLED = x * LEDmatrixSize[1] + LEDmatrixSize[1] - y - 1;
+      // = 1, so we are in even row (0, 1, 2, 3, 4, etc..)
+      else selectedLED = x * LEDmatrixSize[1] + y; // = 0, so we are in an uneven row.
+
+      if (selectingmode) {
+        paths[selectingPath][selectedLED] = 1;
+        LEDS[selectedLED].updateColorHex(selectingcolor);
+        LEDS[selectedLED].highlighting(true);
+      } else {
+        paths[selectingPath][selectedLED] = 0;
+        LEDS[selectedLED].highlighting(false);
+      }
+    }
+  };
+
+  p.screenReleased = function() {
+    if (selecting > 0) {
+      selecting = 0;
+      // for (let i = 0; i < drawingsize; i++){
+      //     p.selectLEDS(drawingpath[i]);   // see if the coordinates are on a LED (assuming only 1 led can be selected ever and add it
+      // }
+
+      //
+      // if (paths[paths.length - 1].particles.length < 5) {    // if the drawing has less than 4 points, we assume click (configure) instead of draw
+      //   paths.splice([paths.length - 1], 1);                 // remove recently added path
+      //
+      //   if (paths.length > 0) {                              // if there are paths, configure clicked area (if clicked in area)
+      //     let gotIt = -1;
+      //     let point = p.relativeToMatrix(p.createVector(p.mouseX, p.mouseY));
+      //
+      //     for (let i = paths.length - 1; i > -1; i--) {       // work backwards through all areas (so the ones on top are checked first)
+      //       if (paths[i].contains(point) && !gotIt > -1) {    // check if the click point is within the path, and only act upon the zone 'on top'
+      //         gotIt = i;
+      //         p.highlightLedsInPath(paths[i]);                // highlight zone and it's LED's
+      //       }
+      //     }
+      //
+      //     if (gotIt > -1) {                         // yes, clicked on an existing area
+      //       p.highlightPaths(gotIt);                // (pathID) highlight this path, de-emphasize others
+      //       p.highlightLedsInPath(paths[gotIt]);    // highlight the LEDS in this path
+      //     } else {                                  // we clicked away from any zones!
+      //
+      //     }
+      //   }
+      //
+      // } else {
+
+      // let foundLEDs = false;
+      // foundLEDs = p.highlightLedsInPath(paths[paths.length-1]); // highlight zone and it's LED's, returns false if none is found
+      // if (!foundLEDs) {   // if the path is not drawn on some LEDS, remove it
+      //   paths.splice([paths.length - 1], 1);
+      //   p.highlightLedsInPath();  // leave empty = turn all LEDS on again.
+      // }
+      // }
+
+      // reset modes
+
+      p.updateFirebase();
+    }
+  };
+
+  p.updateLEDstring = function() {
+    let stringArray = [];
+    for (let i = 0; i < LEDS.length; i++) {
+      stringArray.push(LEDS[i].toString());
+    }
+    //console.log(stringArray.join(""));
+  };
+
+  p.updateFirebase = function() {
+    p.updateLEDstring();
+    //updateMatrixDatabase(LEDmatrixName, LEDmatrixString);
   };
 
   p.updateMatrix = function(
@@ -216,135 +389,5 @@ let sketch = function(p) {
         }
       }
     }
-  };
-
-  p.windowResized = function() {
-    // wait 1 second for any windowsize changes (by overriding any ongoing windowchanges)
-    window.clearTimeout(resizeMatrix);
-    resizeMatrix = window.setTimeout(function() {
-      p.updateMatrix(LEDmatrixName, LEDmatrixSize, LEDmatrixString, true);
-    }, 500);
-  };
-
-  // create a new element for in the DOM - I am not checking for duplicates at the moment
-  p.createTrigger = function(name, id) {
-    let toggle = document.createElement("li");
-    let input = document.createElement("INPUT");
-    input.setAttribute("type", "checkbox");
-    input.name = name;
-    input.value = id;
-    let label = document.createElement("LABEL");
-    label.htmlFor = name;
-    let innerLabel = document.createTextNode(name);
-    label.appendChild(innerLabel);
-    toggle.appendChild(input);
-    toggle.appendChild(label);
-
-    let list = document.getElementById("triggers");
-    list.appendChild(toggle);
-
-    input.addEventListener("change", () => {
-      for (let i = 0; i < interactivity.length; i++) {
-        if (interactivity[i].id == input.value) {
-          interactivity[i].active = input.checked;
-
-          for (let q = 0; q < LEDS.length; q++) {
-            LEDS[i].updateTrigger(interactivity[i].id, interactivity[i].active);
-          }
-        }
-      }
-    });
-  };
-
-  p.screenPressed = function() {
-    selecting = p.millis();
-
-    current_point.x = p.mouseX;
-    current_point.y = p.mouseY; // Grab mouse position
-    previous_point = current_point.copy();
-
-    p.checkLEDhit(current_point);
-  };
-
-  p.checkLEDhit = function(clicked) {
-    let point = p.relativeToMatrix(clicked);
-    let x = Math.round(point.x + LEDmatrixSize[0] / 2);
-    let y = Math.round(point.y + LEDmatrixSize[1] / 2);
-    if (x >= 0 && x < LEDmatrixSize[0] && y >= 0 && y < LEDmatrixSize[1]) {
-      // we are within the grid! this should result in one possible anwer due to our rounding
-      let selectedLED;
-      if (x % 2) selectedLED = x * LEDmatrixSize[1] + LEDmatrixSize[1] - y - 1;
-      // = 1, so we are in even row (0, 1, 2, 3, 4, etc..)
-      else selectedLED = x * LEDmatrixSize[1] + y; // = 0, so we are in an uneven row.
-
-      if (drawmode.checked) {
-        paths[selectingPath][selectedLED] = 1;
-        LEDS[selectedLED].highlighting(true);
-      } else {
-        paths[selectingPath][selectedLED] = 0;
-        LEDS[selectedLED].highlighting(false);
-      }
-    }
-  };
-
-  p.screenReleased = function() {
-    if (selecting) {
-      // for (let i = 0; i < drawingsize; i++){
-      //     p.selectLEDS(drawingpath[i]);   // see if the coordinates are on a LED (assuming only 1 led can be selected ever and add it
-      // }
-
-      //
-      // if (paths[paths.length - 1].particles.length < 5) {    // if the drawing has less than 4 points, we assume click (configure) instead of draw
-      //   paths.splice([paths.length - 1], 1);                 // remove recently added path
-      //
-      //   if (paths.length > 0) {                              // if there are paths, configure clicked area (if clicked in area)
-      //     let gotIt = -1;
-      //     let point = p.relativeToMatrix(p.createVector(p.mouseX, p.mouseY));
-      //
-      //     for (let i = paths.length - 1; i > -1; i--) {       // work backwards through all areas (so the ones on top are checked first)
-      //       if (paths[i].contains(point) && !gotIt > -1) {    // check if the click point is within the path, and only act upon the zone 'on top'
-      //         gotIt = i;
-      //         p.highlightLedsInPath(paths[i]);                // highlight zone and it's LED's
-      //       }
-      //     }
-      //
-      //     if (gotIt > -1) {                         // yes, clicked on an existing area
-      //       p.highlightPaths(gotIt);                // (pathID) highlight this path, de-emphasize others
-      //       p.highlightLedsInPath(paths[gotIt]);    // highlight the LEDS in this path
-      //     } else {                                  // we clicked away from any zones!
-      //
-      //     }
-      //   }
-      //
-      // } else {
-
-      // let foundLEDs = false;
-      // foundLEDs = p.highlightLedsInPath(paths[paths.length-1]); // highlight zone and it's LED's, returns false if none is found
-      // if (!foundLEDs) {   // if the path is not drawn on some LEDS, remove it
-      //   paths.splice([paths.length - 1], 1);
-      //   p.highlightLedsInPath();  // leave empty = turn all LEDS on again.
-      // }
-      // }
-
-      // reset modes
-
-      selecting = 0;
-      selectingmode = 0;
-
-      p.updateFirebase();
-    }
-  };
-
-  p.updateLEDstring = function() {
-    let stringArray = [];
-    for (let i = 0; i < LEDS.length; i++) {
-      stringArray.push(LEDS[i].toString());
-    }
-    //console.log(stringArray.join(""));
-  };
-
-  p.updateFirebase = function() {
-    p.updateLEDstring();
-    //updateMatrixDatabase(LEDmatrixName, LEDmatrixString);
   };
 };
