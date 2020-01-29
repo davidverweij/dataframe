@@ -48,7 +48,8 @@ Adafruit_NeoPixel strip =
 int potpin = 0;               // A potmeter to reduce overall brightness. Will replace with LDR (or alike)
 int potpinVal = 0;            // Potmeter reading result (to be multiplied with LED values)
 int prev_potpinVal = 0;       // Previous potmeter result
-int potpinDiff = 2;           // Prevent debouncing/jittering by having threshold for potmeter readings
+float potpinValFloat = 0.0;   // to use for LEDs (one variable, faster calculations?).
+int potpinDiff = 20;           // Prevent debouncing/jittering by having threshold for potmeter readings -- 20 gives 50 types of brightness
 
 String matrixString = "";     // keep a local copy of the database string for LED RGB valus
 int matrixSize[2] = {9, 13};  // size of the matrix we are currently working with;
@@ -75,15 +76,27 @@ void setup()
       matrix[i][j] = 0;
     }
   }
+  
+  strip.begin();
+  strip.show(); // Initialize all pixels to 'off'
 
   Serial.print("Connecting to Wi-Fi");
   int status = WL_IDLE_STATUS;
+
+  int counter = 0;
   while (status != WL_CONNECTED)
   {
     status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.print(".");
+
+    // LED strip search for wifi animation
+    strip.setPixelColor(counter, strip.Color(0,0,0,0)); 
+    counter = (counter+1)%117;
+    strip.setPixelColor(counter, strip.Color(0,0,0,100));
+    strip.show();
     delay(300);
   }
+  
   Serial.println();
   Serial.print("IoTCanvas Database ID: ");
   Serial.println(FIREBASE_ID);
@@ -96,20 +109,19 @@ void setup()
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH, WIFI_SSID, WIFI_PASSWORD);
   Firebase.reconnectWiFi(true);
 
-
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
 }
 
 void loop()
 {
 
-  potpinVal = (int) ((double) analogRead(potpin) / 10.23); // get the brightness modifier (will be 0 - 100)
+  potpinVal = analogRead(potpin); // get the brightness modifier (will be 0 - 1023)
 
   // check if differs, if so, then update LED and store value
   if (abs(potpinVal - prev_potpinVal) > potpinDiff) {
-    updateMatrix();
+    potpinValFloat = (float) potpinVal / 1023;
     prev_potpinVal = potpinVal;
+    updateMatrix();
+    
   }
 
   if (millis() - getDataPrevMillis > getDataThreshold) {
@@ -147,9 +159,9 @@ void loop()
 
         for (int i = 0; i < numLeds && i < totalLEDs; i++) {    // double check in case incoming data is different length than local stored
           int offset = i * 6;
-          matrix[i][0] = (int) ((double) potpinVal * (decodeNibble(in[offset + 0]) * 16 + decodeNibble(in[offset + 1])) / 100);
-          matrix[i][1] = (int) ((double) potpinVal * (decodeNibble(in[offset + 2]) * 16 + decodeNibble(in[offset + 3])) / 100);
-          matrix[i][2] = (int) ((double) potpinVal * (decodeNibble(in[offset + 4]) * 16 + decodeNibble(in[offset + 5])) / 100);
+          matrix[i][0] = decodeNibble(in[offset + 0]) * 16 + decodeNibble(in[offset + 1]);
+          matrix[i][1] = decodeNibble(in[offset + 2]) * 16 + decodeNibble(in[offset + 3]);
+          matrix[i][2] = decodeNibble(in[offset + 4]) * 16 + decodeNibble(in[offset + 5]);
           //led[i][3] = 0;  // we work without white at the moment
         }
 
@@ -178,7 +190,7 @@ void loop()
 void updateMatrix() {
   for (int i = 0; i < totalLEDs; i++) {
     for (int j = 0; j < 4; j++) {
-      strip.setPixelColor(i, strip.Color(matrix[i][0] , matrix[i][1], matrix[i][2], matrix[i][3]));
+      strip.setPixelColor(i, strip.Color((int) (potpinValFloat * matrix[i][0]) , (int) (potpinValFloat * matrix[i][1]), (int) (potpinValFloat * matrix[i][2]), (int) (potpinValFloat * matrix[i][3])));
     }
   }
   strip.show();

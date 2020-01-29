@@ -39,16 +39,17 @@
         </li>
         <li>
           <select id="zonesmode">
-            <option value="0">no</option>
+            <option value="-1" selected="selected">no</option>
+            <option value="0">1</option>
           </select>
           <label>Zone</label>
         </li>
-        <li>
+        <li id="zoneeditor" style="display:none;">
           <div class="switch-toggle">
             <input id="switch-toggle-add" name="state-d" type="radio" checked="checked" />
             <label for="switch-toggle-add" onclick="">ADD</label>
 
-            <input id="switch-toggle-remove" name="state-d" type="radio" checked="" />
+            <input id="switch-toggle-remove" name="state-d" type="radio" />
             <label for="switch-toggle-remove" class="disabled" onclick="">REMOVE</label>
 
             <input id="switch-toggle-color" name="state-d" type="radio" />
@@ -56,9 +57,13 @@
           </div>
           <label>Zone Editor</label>
         </li>
-        <li>
+        <li id="colorwheel" style="display:none;">
           <input id="drawcolor" type="color" value="#ff0000" />
           <label>Color</label>
+        </li>
+        <li id="zoneeditor_all" style="display:none;">
+          <input id="zone_all_button" type="button" value="Select" />
+          <label>All</label>
         </li>
         <li>
           <input id="updatemode" type="button" value="Update" />

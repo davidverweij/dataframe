@@ -19,6 +19,7 @@ let sketch = function(p) {
   let previous_selecting = 0; // to see if we have a new click
   let selectingmode = 0; // based on drawmode toggle button
   let selectingPath = [[]]; // selectable zones will be LEDmatrixLength long (adjusting values in an array is more efficient than adding / splicing)
+  let currentPath = -1; // the path / zone we are currently working with.
 
   let lastDrawn = 0; // keep track of when drawn
   let drawnRate = 100; // 'framerate' for drawing LEDs
@@ -39,7 +40,16 @@ let sketch = function(p) {
 
   let resizeMatrix; // variable to set timeout to recalc matrix (with delay)
 
-  let triggers, drawcolor, testmode, zonesmode, updatemode, drawmode = []; // UI listeners
+  let triggers,
+    drawcolor,
+    testmode,
+    zonesmode,
+    updatemode,
+    drawmode = [],
+    zoneeditor,
+    colorwheel,
+    zoneeditor_all,
+    zone_all_button; // UI listeners (DOM elements)
 
   p.setup = function() {
     WINDOWsize = p.getCanvasSize();
@@ -141,44 +151,83 @@ let sketch = function(p) {
     zonesmode = document.getElementById("zonesmode");
     updatemode = document.getElementById("updatemode");
 
+    zoneeditor = document.getElementById("zoneeditor");
+    colorwheel = document.getElementById("colorwheel");
+
     drawmode[0] = document.getElementById("switch-toggle-add");
     drawmode[1] = document.getElementById("switch-toggle-remove");
     drawmode[2] = document.getElementById("switch-toggle-color");
 
+    zoneeditor_all = document.getElementById("zoneeditor_all");
+    zone_all_button = document.getElementById("zone_all_button");
+
     selectingcolor = drawcolor.value; // set the first time;
     selectingmode = 0;
-    //testmode = testmode.checked;
-    //zonesmode = zonesmode.options[zonesmode.selectedIndex].value;
+    zonesmode.value = -1;
 
-    drawmode[0].addEventListener("change", () => {
-      if (drawmode[0].checked) selectingmode = 0;
+
+
+    drawmode[0].addEventListener("change", () => {  // add leds to zones
+      if (drawmode[0].checked) {
+        selectingmode = 0;
+        colorwheel.style.display = "none";
+        zoneeditor_all.value = "Select";
+        zoneeditor_all.display = "inherit";
+      }
     });
-    drawmode[1].addEventListener("change", () => {
-      if (drawmode[1].checked) selectingmode = 1;
+    drawmode[1].addEventListener("change", () => {  // remove leds to zones
+      if (drawmode[1].checked) {
+        selectingmode = 1;
+        colorwheel.style.display = "none";
+        zoneeditor_all.value = "Deselect";
+        zoneeditor_all.display = "inherit";
+      }
     });
-    drawmode[2].addEventListener("change", () => {
-      if (drawmode[2].checked) selectingmode = 2;
+    drawmode[2].addEventListener("change", () => {  // color leds from zone
+      if (drawmode[2].checked) {
+        selectingmode = 2;
+        colorwheel.style.display = "inherit";
+        drawcolor.click();
+        zoneeditor_all.display = "none";
+      }
     });
+
     drawcolor.addEventListener("input", () => {
       selectingcolor = drawcolor.value;
-      let pathValue = zonesmode.options[zonesmode.selectedIndex].value;
-      for(let i = 0; i < paths[pathValue].length; i++){
-
-        LEDS[selectedLED].highlighting(true);
+      for (let i = 0; i < paths[currentPath].length; i++) {
+        if (paths[currentPath][i] == 1) {
+          LEDS[i].updateColorHex(selectingcolor);
+        }
       }
-
     });
     testmode.addEventListener("change", () => {
       // change to realtime database data here!
     });
     zonesmode.addEventListener("change", () => {
       // change to selecting zones here!
-      console.log("zone: " + zonesmode.options[zonesmode.selectedIndex].value + " is selected");
+      currentPath = zonesmode.options[zonesmode.selectedIndex].value;
+      if (currentPath > -1) {
+        zoneeditor.style.display = "inherit";
+        zoneeditor_all.display = "inherit";
+      } else {
+        zoneeditor.style.display = "none";
+        colorwheel.style.display = "none";
+        drawmode[0].checked = true;
+        zoneeditor_all.value = "Select";
+      }
+      console.log("zone: " + currentPath + " is selected");
     });
+    zoneeditor_all.addEventListener("click", () => {
+      if (zoneeditor_all.value == "Select"){
+        // SELECT ALL LEDS
+      } else {
+        // DESELECT ALL LEDS
+      }
+    });
+
     updatemode.addEventListener("click", () => {
-      let pathValue = zonesmode.options[zonesmode.selectedIndex].value;
-      console.log("Current selected path is " + pathValue + ", data:")
-      console.log(paths[pathValue]);
+      console.log("Current selected path is " + currentPath + ", data:");
+      console.log(paths[currentPath]);
     });
   };
 
@@ -213,13 +262,15 @@ let sketch = function(p) {
   };
 
   p.screenPressed = function() {
-    selecting = p.millis();
+    if (currentPath > -1) {
+      selecting = p.millis();
 
-    current_point.x = p.mouseX;
-    current_point.y = p.mouseY; // Grab mouse position
-    previous_point = current_point.copy();
+      current_point.x = p.mouseX;
+      current_point.y = p.mouseY; // Grab mouse position
+      previous_point = current_point.copy();
 
-    p.checkLEDhit(current_point);
+      p.checkLEDhit(current_point);
+    }
   };
 
   p.checkLEDhit = function(clicked) {
@@ -233,11 +284,11 @@ let sketch = function(p) {
       // = 1, so we are in even row (0, 1, 2, 3, 4, etc..)
       else selectedLED = x * LEDmatrixSize[1] + y; // = 0, so we are in an uneven row.
 
-      if (selectingmode) {
+      if (selectingmode == 0) {
         paths[selectingPath][selectedLED] = 1;
         LEDS[selectedLED].updateColorHex(selectingcolor);
         LEDS[selectedLED].highlighting(true);
-      } else {
+      } else if (selectingmode == 1) {
         paths[selectingPath][selectedLED] = 0;
         LEDS[selectedLED].highlighting(false);
       }
