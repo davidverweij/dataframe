@@ -11,14 +11,16 @@ TODOs:
 
 let sketch = function(p) {
   let paths = [],
-    LEDS = [],
-    interactivity = []; // All the paths (or zones), leds and connected interactivities
+    colors = [],
+    triggers = [],
+    LEDS = []; // All the paths (or zones), leds etc
 
   let touch = false; // on setup we check if we work with a mobile device.
   let selecting = 0; // Are we selecting LEDs? (use millis to indicate unique identifyer)
+  let selectingcolor = "#000000";
   let previous_selecting = 0; // to see if we have a new click
   let selectingmode = 0; // based on drawmode toggle button
-  let selectingPath = [[]]; // selectable zones will be LEDmatrixLength long (adjusting values in an array is more efficient than adding / splicing)
+  let selectingPath = 0; // selectable zones will be LEDmatrixLength long (adjusting values in an array is more efficient than adding / splicing)
   let currentPath = -1; // the path / zone we are currently working with.
 
   let lastDrawn = 0; // keep track of when drawn
@@ -38,18 +40,24 @@ let sketch = function(p) {
   let LEDsize = 0.8;
   let LEDmatrixName = "unknown";
 
+  let ZONES = {}; // will store all zones and triggers - if any;
+
   let resizeMatrix; // variable to set timeout to recalc matrix (with delay)
 
-  let triggers,
-    drawcolor,
-    testmode,
-    zonesmode,
-    updatemode,
-    drawmode = [],
-    zoneeditor,
-    colorwheel,
-    zoneeditor_all,
-    zone_all_button; // UI listeners (DOM elements)
+  let totalzonesTEXT,
+    zonesmodeSELECT,
+    zoneselectorBLOCK,
+    noZonesBLOCK,
+    addZoneBUTTON,
+    updatemodeBUTTON,
+    editorBLOCK,
+    addLEDRADIO,
+    removeLEDRADIO,
+    selectallBUTTON,
+    deselectallBUTTON,
+    ifthisSELECT,
+    drawcolorCOLORPICKER,
+    statusTEXT; // all DOM elements and listeners
 
   p.setup = function() {
     WINDOWsize = p.getCanvasSize();
@@ -59,8 +67,7 @@ let sketch = function(p) {
     current_point = p.createVector(0, 0);
 
     // testing with one zone and first zone selected
-    paths.push([]); // first path to start with for now
-    selectingPath = 0;
+    //paths.push([]); // first path to start with for now
 
     touch = isMobileDevice(); // function in the iotcanvas.js
     console.log("touchmode: " + touch);
@@ -95,7 +102,7 @@ let sketch = function(p) {
   /* Checking the input on every few pixel moves was jittery when drawing every frame. Now, we only draw the changes */
 
   p.drawView = function() {
-    p.background(200);
+    p.background(211);
     p.fill(0);
     p.noStroke();
 
@@ -145,116 +152,96 @@ let sketch = function(p) {
   };
 
   p.attachUI = function() {
-    //triggers = document.getElementById("triggers");
-    drawcolor = document.getElementById("drawcolor");
-    testmode = document.getElementById("testmode");
-    zonesmode = document.getElementById("zonesmode");
-    updatemode = document.getElementById("updatemode");
+    totalzonesTEXT = document.getElementById("totalzones");
+    zonesmodeSELECT = document.getElementById("zonesmode");
+    zoneselectorBLOCK = document.getElementById("zoneselector");
+    noZonesBLOCK = document.getElementById("noZones");
+    addZoneBUTTON = document.getElementById("addZone");
+    updatemodeBUTTON = document.getElementById("updatemode");
+    editorBLOCK = document.getElementById("editor");
+    addLEDRADIO = document.getElementById("addLED");
+    removeLEDRADIO = document.getElementById("removeLED");
+    selectallBUTTON = document.getElementById("selectall");
+    deselectallBUTTON = document.getElementById("deselectall");
+    ifthisSELECT = document.getElementById("ifthis");
+    drawcolorCOLORPICKER = document.getElementById("drawcolor");
+    statusTEXT = document.getElementById("status");
 
-    zoneeditor = document.getElementById("zoneeditor");
-    colorwheel = document.getElementById("colorwheel");
-
-    drawmode[0] = document.getElementById("switch-toggle-add");
-    drawmode[1] = document.getElementById("switch-toggle-remove");
-    drawmode[2] = document.getElementById("switch-toggle-color");
-
-    zoneeditor_all = document.getElementById("zoneeditor_all");
-    zone_all_button = document.getElementById("zone_all_button");
-
-    selectingcolor = drawcolor.value; // set the first time;
     selectingmode = 0;
-    zonesmode.value = -1;
+    zoneselectorBLOCK.style.display = "none";
+    noZonesBLOCK.style.display = "none";
+    editorBLOCK.style.display = "none";
+    statusTEXT.innerHTML = "LOADING";
 
-
-
-    drawmode[0].addEventListener("change", () => {  // add leds to zones
-      if (drawmode[0].checked) {
-        selectingmode = 0;
-        colorwheel.style.display = "none";
-        zoneeditor_all.value = "Select";
-        zoneeditor_all.display = "inherit";
-      }
-    });
-    drawmode[1].addEventListener("change", () => {  // remove leds to zones
-      if (drawmode[1].checked) {
-        selectingmode = 1;
-        colorwheel.style.display = "none";
-        zoneeditor_all.value = "Deselect";
-        zoneeditor_all.display = "inherit";
-      }
-    });
-    drawmode[2].addEventListener("change", () => {  // color leds from zone
-      if (drawmode[2].checked) {
-        selectingmode = 2;
-        colorwheel.style.display = "inherit";
-        drawcolor.click();
-        zoneeditor_all.display = "none";
-      }
-    });
-
-    drawcolor.addEventListener("input", () => {
-      selectingcolor = drawcolor.value;
-      for (let i = 0; i < paths[currentPath].length; i++) {
-        if (paths[currentPath][i] == 1) {
-          LEDS[i].updateColorHex(selectingcolor);
-        }
-      }
-    });
-    testmode.addEventListener("change", () => {
-      // change to realtime database data here!
-    });
-    zonesmode.addEventListener("change", () => {
+    zonesmodeSELECT.addEventListener("change", () => {
       // change to selecting zones here!
-      currentPath = zonesmode.options[zonesmode.selectedIndex].value;
+      currentPath =
+        zonesmodeSELECT.options[zonesmodeSELECT.selectedIndex].value;
       if (currentPath > -1) {
-        zoneeditor.style.display = "inherit";
-        zoneeditor_all.display = "inherit";
+        editorBLOCK.style.display = "inherit";
+        statusTEXT.innerHTML = "ZONE " + currentPath;
+        ifthisSELECT.value = triggers[currentPath];
+        drawcolorCOLORPICKER.value = colors[currentPath];
       } else {
-        zoneeditor.style.display = "none";
-        colorwheel.style.display = "none";
-        drawmode[0].checked = true;
-        zoneeditor_all.value = "Select";
+        editorBLOCK.style.display = "none";
+        statusTEXT.innerHTML = "ALL ZONES";
       }
-      console.log("zone: " + currentPath + " is selected");
+      p.renderZone(currentPath);
     });
-    zoneeditor_all.addEventListener("click", () => {
-      if (zoneeditor_all.value == "Select"){
-        // SELECT ALL LEDS
-      } else {
-        // DESELECT ALL LEDS
+
+    addZoneBUTTON.addEventListener("click", () => {
+      console.log("Add a zone!");
+      let lastZone = -1;
+      for (let zone in ZONES) {
+        lastZone = parseInt(zone);
       }
+      lastZone++;
+
+      // fill our temporary selecting Array! TODO make this dynamic!
+      paths[lastZone] = new Array(LEDmatrixLength);
+      for (let i = 0; i < LEDmatrixLength; i++) paths[lastZone][i] = 0;
+
+      ZONES[lastZone] = {
+        LEDS: paths[lastZone].join(""),
+        color: "000000",
+        trigger: "nothing"
+      };
+
+      let updatefield = "/zones/" + lastZone + "/";
+
+      updateMatrixZone(LEDmatrixName, { [updatefield]: ZONES[lastZone] });
     });
-
-    updatemode.addEventListener("click", () => {
-      console.log("Current selected path is " + currentPath + ", data:");
-      console.log(paths[currentPath]);
+    updatemodeBUTTON.addEventListener("click", () => {
+      p.updateFirebase();
+      console.log("Update Database!");
     });
-  };
-
-  // create a new element for in the DOM - I am not checking for duplicates at the moment
-  p.createTrigger = function(name, id) {
-    let toggle = document.createElement("li");
-    let input = document.createElement("INPUT");
-    input.setAttribute("type", "checkbox");
-    input.name = name;
-    input.value = id;
-    let label = document.createElement("LABEL");
-    label.htmlFor = name;
-    let innerLabel = document.createTextNode(name);
-    label.appendChild(innerLabel);
-    toggle.appendChild(input);
-    toggle.appendChild(label);
-
-    let list = document.getElementById("triggers");
-    list.appendChild(toggle);
-
-    input.addEventListener("change", () => {
-      for (let i = 0; i < interactivity.length; i++) {
-        if (interactivity[i].id == input.value) {
-          interactivity[i].active = input.checked;
-
-          for (let q = 0; q < LEDS.length; q++) {
-            LEDS[i].updateTrigger(interactivity[i].id, interactivity[i].active);
+    addLEDRADIO.addEventListener("change", () => {
+      console.log("Draw mode ADD");
+      selectingmode = 0;
+    });
+    removeLEDRADIO.addEventListener("change", () => {
+      console.log("Draw mode REMOVE");
+      selectingmode = 1;
+    });
+    selectallBUTTON.addEventListener("click", () => {
+      console.log("add all LEDS!");
+    });
+    deselectallBUTTON.addEventListener("click", () => {
+      console.log("remove all LEDS!");
+    });
+    ifthisSELECT.addEventListener("change", () => {
+      // change to selecting zones here!
+      let chosenTrigger =
+        ifthisSELECT.options[ifthisSELECT.selectedIndex].value;
+      console.log("chosen trigger = " + chosenTrigger);
+    });
+    drawcolorCOLORPICKER.addEventListener("input", () => {
+      selectingcolor = drawcolor.value;
+      colors[currentPath] = selectingcolor;
+      if (currentPath > -1) {
+        for (let i = 0; i < paths[currentPath].length; i++) {
+          if (paths[currentPath][i] == 1) {
+            LEDS[i].updateColorHex(selectingcolor);
           }
         }
       }
@@ -285,11 +272,11 @@ let sketch = function(p) {
       else selectedLED = x * LEDmatrixSize[1] + y; // = 0, so we are in an uneven row.
 
       if (selectingmode == 0) {
-        paths[selectingPath][selectedLED] = 1;
+        paths[currentPath][selectedLED] = 1;
         LEDS[selectedLED].updateColorHex(selectingcolor);
         LEDS[selectedLED].highlighting(true);
       } else if (selectingmode == 1) {
-        paths[selectingPath][selectedLED] = 0;
+        paths[currentPath][selectedLED] = 0;
         LEDS[selectedLED].highlighting(false);
       }
     }
@@ -298,46 +285,6 @@ let sketch = function(p) {
   p.screenReleased = function() {
     if (selecting > 0) {
       selecting = 0;
-      // for (let i = 0; i < drawingsize; i++){
-      //     p.selectLEDS(drawingpath[i]);   // see if the coordinates are on a LED (assuming only 1 led can be selected ever and add it
-      // }
-
-      //
-      // if (paths[paths.length - 1].particles.length < 5) {    // if the drawing has less than 4 points, we assume click (configure) instead of draw
-      //   paths.splice([paths.length - 1], 1);                 // remove recently added path
-      //
-      //   if (paths.length > 0) {                              // if there are paths, configure clicked area (if clicked in area)
-      //     let gotIt = -1;
-      //     let point = p.relativeToMatrix(p.createVector(p.mouseX, p.mouseY));
-      //
-      //     for (let i = paths.length - 1; i > -1; i--) {       // work backwards through all areas (so the ones on top are checked first)
-      //       if (paths[i].contains(point) && !gotIt > -1) {    // check if the click point is within the path, and only act upon the zone 'on top'
-      //         gotIt = i;
-      //         p.highlightLedsInPath(paths[i]);                // highlight zone and it's LED's
-      //       }
-      //     }
-      //
-      //     if (gotIt > -1) {                         // yes, clicked on an existing area
-      //       p.highlightPaths(gotIt);                // (pathID) highlight this path, de-emphasize others
-      //       p.highlightLedsInPath(paths[gotIt]);    // highlight the LEDS in this path
-      //     } else {                                  // we clicked away from any zones!
-      //
-      //     }
-      //   }
-      //
-      // } else {
-
-      // let foundLEDs = false;
-      // foundLEDs = p.highlightLedsInPath(paths[paths.length-1]); // highlight zone and it's LED's, returns false if none is found
-      // if (!foundLEDs) {   // if the path is not drawn on some LEDS, remove it
-      //   paths.splice([paths.length - 1], 1);
-      //   p.highlightLedsInPath();  // leave empty = turn all LEDS on again.
-      // }
-      // }
-
-      // reset modes
-
-      p.updateFirebase();
     }
   };
 
@@ -352,6 +299,119 @@ let sketch = function(p) {
   p.updateFirebase = function() {
     p.updateLEDstring();
     //updateMatrixDatabase(LEDmatrixName, LEDmatrixString);
+  };
+
+  p.renderZone = function(chosenZone) {
+    if (chosenZone == -1) {
+      let totalpaths = paths.length;
+      for (let i = 0; i < LEDmatrixLength; i++) {
+        let mixcolor = [];
+        for (let i2 = 0; i2 < totalpaths; i2++) {
+          if (paths[i2][i] == 1) mixcolor.push(colors[i2]);
+        }
+        let mixlength = mixcolor.length;
+        if (mixlength == 0) {
+          LEDS[i].highlighting(false);
+        } else if (mixlength == 1) {
+          LEDS[i].updateColorHex(mixcolor[0]);
+          LEDS[i].highlighting(true);
+        } else {
+          let r = 0,
+            g = 0,
+            b = 0;
+            console.log(mixcolor);
+
+          for (let i3 = 0; i3 < mixlength; i3++) {
+            // start at 1, skip the #
+            r =
+              r +
+              p.decodeNibble(mixcolor[i3][1]) * 16 +
+              p.decodeNibble(mixcolor[i3][2]);
+            g =
+              g +
+              p.decodeNibble(mixcolor[i3][3]) * 16 +
+              p.decodeNibble(mixcolor[i3][4]);
+            b =
+              b +
+              p.decodeNibble(mixcolor[i3][5]) * 16 +
+              p.decodeNibble(mixcolor[i3][6]);
+          }
+          r = parseInt(r / mixlength);
+          b = parseInt(b / mixlength);
+          g = parseInt(g / mixlength);
+          let result = '#' + fullColorHex(r, g, b);
+          console.log(result);
+          LEDS[i].updateColorHex(result);
+
+          LEDS[i].highlighting(true);
+        }
+      }
+    } else {
+      for (let i = 0; i < LEDmatrixLength; i++) {
+        if (paths[chosenZone][i] == 1) {
+          LEDS[i].updateColorHex(colors[chosenZone]);
+          LEDS[i].highlighting(true);
+        } else {
+          LEDS[i].highlighting(false);
+        }
+      }
+    }
+  };
+
+  p.decodeNibble = function(value) {
+    if (value >= "0" && value <= "9") return value - "0";
+    if (value >= "A" && value <= "Z") return value - "A";
+    if (value >= "a" && value <= "z") return value - "a";
+    return -1;
+  };
+
+  p.updateUI = function() {
+    let totalzones = paths.length;
+    totalzonesTEXT.innerHTML = totalzones;
+
+    zoneselectorBLOCK.style.display = "inherit";
+    noZonesBLOCK.style.display = "none";
+
+    for (let i = -1; i < totalzones; i++) {
+      let opt = document.createElement("option");
+      if (i == -1) {
+        opt.appendChild(document.createTextNode("show all"));
+        opt.value = -1;
+      } else {
+        opt.appendChild(document.createTextNode(i));
+        opt.value = i;
+      }
+      zonesmodeSELECT.appendChild(opt);
+    }
+
+    zonesmodeSELECT.value = -1;
+    editorBLOCK.style.display = "none";
+    statusTEXT.innerHTML = "ALL ZONES";
+  };
+
+  p.updateZones = function(zonesData) {
+    if (typeof zonesData != "undefined") {
+      ZONES = { ...zonesData }; //copy the data for local keepin
+      paths = [];
+      colors = [];
+      triggers = [];
+
+      let zonecount = -1;
+      for (let property in ZONES) {
+        zonecount++;
+        paths.push([...ZONES[property].LEDS]); // assuming we have zone 0, 1, 2 etc...
+        colors.push("#" + ZONES[property].color);
+        triggers.push(ZONES[property].trigger);
+      }
+      if (zonecount > -1) {
+        p.updateUI();
+      }
+    } else {
+      console.log("zones data is empty - assuming no zones stored");
+      totalzonesTEXT.innerHTML = 0;
+      zoneselectorBLOCK.style.display = "none";
+      noZonesBLOCK.style.display = "inherit";
+    }
   };
 
   p.updateMatrix = function(
@@ -379,10 +439,6 @@ let sketch = function(p) {
         WINDOWsize[0] / (LEDmatrixSize[0] + 2),
         WINDOWsize[1] / (LEDmatrixSize[1] + 2)
       );
-
-      // fill our temporary selecting Array! TODO make this dynamic!
-      paths[0] = new Array(LEDmatrixLength);
-      for (let i = 0; i < LEDmatrixLength; i++) paths[0][i] = 0;
 
       selectmargin = Math.ceil(LEDspacing / 4); // through trial and error, this seems to get the most promising results (almost never misses a LED if touched)
 

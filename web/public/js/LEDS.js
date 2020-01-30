@@ -30,7 +30,7 @@ class LED {
   }
 
   updateColor(rgbmatrix) {
-    updateColorHex("#" + rgbmatrix);
+    this.updateColorHex("#" + rgbmatrix);
   }
 
   updateColorHex(hexcolor) {

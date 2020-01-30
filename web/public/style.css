@@ -11,13 +11,52 @@ body {
   padding: 0;
   display: grid;
   grid-template-columns: 1;
-  grid-template-rows: 1fr 10fr 1fr;
+  grid-template-rows: 40px 60px 60px 1fr 40px;
+  font-family: Calibri;
+  font-weight: bold;
+}
+
+
+.title {
+  grid-row: 1/2;
+  text-align: center;
+  font-size:22px;
+  display:table;
+  color:#ededed;
+  background-color: #bababa;
+}
+.title p{
+  display: table-cell;
+  vertical-align: middle;
+    padding-left:20px;
+}
+.menu {
+  grid-row: 2/3;
+}
+.editor{
+  background: #e0e0e0;
+  grid-row: 3/4
+}
+.flex {
+  background-color: #c7c7c7;
+
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.flex label {
+  font-size: 13px;
+  text-align: center;
+  padding-left: 10px;
+  padding-right:10px;
 }
 
 #main {
-  background: #e6e6e6;
+  background: #d3d3d3;
   overflow: hidden;
-  grid-row: 2/3;
+  grid-row: 4/5;
   cursor: default;
   touch-action: none;
 
@@ -35,74 +74,14 @@ body {
   height: 100%;
 }
 
-.footer {
-  grid-row: 3/4;
-  background-color: #e0e0e0;
-}
-.menu {
-  background-color: #e0e0e0;
-  grid-row: 1/2;
-  padding: 5px;
-}
-
-.menu ul {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: row;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.menu ul li {
-  padding: 5px;
-  display: flex;
-  flex-direction: column;
-  align-content: stretch;
-  height: 50px;
-  justify-content: space-around;
-}
-
-.menu input,
-.menu button {
+.status{
+  background: #e0e0e0;
+  grid-row: 5/6;
   text-align: center;
+  font-size:18px;
+  display:table;
 }
-
-.menu button {
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  font-size: 40px;
-}
-
-.menu label {
-  display: block;
-  font-size: 13px;
-  text-align: center;
-}
-
-.line {
-  text-align: center;
-  padding-top: 10px;
-  font-size: 12px;
-  width: 100%;
-}
-
-.switch-toggle {
-  border: solid black .5px;
-  border-radius: 5px;
-}
-.switch-toggle input {
-  position: absolute;
-  opacity: 0;
-}
-.switch-toggle input + label {
-  padding: 7px;
-  float:left;
-  border-radius: 5px;
-}
-.switch-toggle input:checked + label {
-  background: green;
-  color: white;
+.status p{
+  display: table-cell;
+  vertical-align: middle;
 }

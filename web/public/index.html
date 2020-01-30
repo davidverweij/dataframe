@@ -1,154 +1,150 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>IoT Canvas</title>
+<head>
+  <meta charset="utf-8" />
+  <meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>IoT Canvas</title>
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/7.6.1/firebase-app.js"></script>
+  <!-- update the version number as needed -->
+  <script defer src="/__/firebase/7.6.1/firebase-app.js"></script>
 
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/7.6.1/firebase-auth.js"></script>
-    <script defer src="/__/firebase/7.6.2/firebase-database.js"></script>
+  <!-- include only the Firebase features as you need -->
+  <script defer src="/__/firebase/7.6.1/firebase-auth.js"></script>
+  <script defer src="/__/firebase/7.6.2/firebase-database.js"></script>
 
-    <!-- initialize the SDK after all desired features are loaded -->
-    <script defer src="/__/firebase/init.js"></script>
+  <!-- initialize the SDK after all desired features are loaded -->
+  <script defer src="/__/firebase/init.js"></script>
 
-    <!-- Firebase UI setup for authenticating users -->
-    <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
-    <link
-      type="text/css"
-      rel="stylesheet"
-      href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css"
-    />
+  <!-- Firebase UI setup for authenticating users -->
+  <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
+  <link
+  type="text/css"
+  rel="stylesheet"
+  href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css"
+  />
 
-    <link rel="stylesheet" type="text/css" href="style.css" />
-    <script src="js/p5.js"></script>
-  </head>
-  <body>
-    <div id="firebaseui-auth-container"></div>
-    <div class="menu">
-      <ul>
-        <li>
-          <input id="testmode" type="checkbox" checked />
-          <label>Testmode</label>
-        </li>
-        <li>
-          <select id="zonesmode">
-            <option value="-1" selected="selected">no</option>
-            <option value="0">1</option>
-          </select>
-          <label>Zone</label>
-        </li>
-        <li id="zoneeditor" style="display:none;">
-          <div class="switch-toggle">
-            <input id="switch-toggle-add" name="state-d" type="radio" checked="checked" />
-            <label for="switch-toggle-add" onclick="">ADD</label>
-
-            <input id="switch-toggle-remove" name="state-d" type="radio" />
-            <label for="switch-toggle-remove" class="disabled" onclick="">REMOVE</label>
-
-            <input id="switch-toggle-color" name="state-d" type="radio" />
-            <label for="switch-toggle-color" onclick="">COLOR</label>
-          </div>
-          <label>Zone Editor</label>
-        </li>
-        <li id="colorwheel" style="display:none;">
-          <input id="drawcolor" type="color" value="#ff0000" />
-          <label>Color</label>
-        </li>
-        <li id="zoneeditor_all" style="display:none;">
-          <input id="zone_all_button" type="button" value="Select" />
-          <label>All</label>
-        </li>
-        <li>
-          <input id="updatemode" type="button" value="Update" />
-          <label>Database</label>
-        </li>
-      </ul>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <script src="js/p5.js"></script>
+</head>
+<body>
+  <div id="firebaseui-auth-container"></div>
+  <!-- will be removed once authenticated -->
+  <div class="title"><p>IoT Canvas Prototype</p></div>
+  <div class="menu flex">
+    <label>You have </label>
+    <span id="totalzones">_</span>
+    <label>zones</label>
+    <div id="zoneselector">
+      <label>Select Zone:</label>
+      <select id="zonesmode"></select>
     </div>
-    <div id="main"></div>
-    <div class="footer"></div>
+    <div>
+      <label id="noZones" style="display:none;">No zones yet. Add one:</label>
+      <input id="addZone" type="button" value="New Zone" />
+    </div>
+    <input id="updatemode" type="button" value="Update Database" />
+  </div>
+  <div class="editor flex">
+    <div id="editor" style="display:none;" class="flex">
+      <label>Add LEDs:</label>
+      <input id="addLED" name="addremove" type="radio" check="checked" />
+      <label>, or Remove LEDs:</label>
+      <input id="removeLED" name="addremove" type="radio" />
+      <input id="selectall" type="button" value="Select All" />
+      <input id="deselectall" type="button" value="Deselect All" />
+      <label>FUNCTIONALITY: </label>
+      <label>If</label>
+      <select id="ifthis">
+        <option value="email">email</option>
+        <option value="phone">phone</option>
+        <option value="rain">rain</option>
+        <option value="nothing">nothing</option>
+      </select>
+      <label>Then turn (color): </label>
+      <input id="drawcolor" type="color" value="#ff0000" />
+    </div>
+  </div>
+  <div id="main"></div>
+  <div class="status"><p>currently showing: <span id="status">xx</span></p></div>
 
-    <script src="js/LEDS.js"></script>
-    <script src="js/PATHS.js"></script>
-    <script src="js/sketch_withselect.js"></script>
-    <script src="js/iotcanvas.js"></script>
+  <script src="js/LEDS.js"></script>
+  <script src="js/PATHS.js"></script>
+  <script src="js/sketch_withselect.js"></script>
+  <script src="js/iotcanvas.js"></script>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        // // The Firebase SDK is initialized and available here!
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // // The Firebase SDK is initialized and available here!
 
-        firebase.auth().onAuthStateChanged(user => {
-          if (user) {
-            // User is signed in.
-            console.log(firebase.auth().currentUser.email + " is logged in!");
-
-            try {
-              setTimeout(() => {
-                // get p5js running before calling functions
-                loadData();
-              }, 1000);
-            } catch (e) {
-              console.error(e);
-            }
-          } else {
-            // Initialize the FirebaseUI Widget using Firebase.
-            var ui = new firebaseui.auth.AuthUI(firebase.auth());
-
-            var uiConfig = {
-              callbacks: {
-                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                  var user = authResult.user;
-                  var credential = authResult.credential;
-                  var isNewUser = authResult.additionalUserInfo.isNewUser;
-                  var providerId = authResult.additionalUserInfo.providerId;
-                  var operationType = authResult.operationType;
-                  // Do something with the returned AuthResult.
-                  // Return type determines whether we continue the redirect automatically
-                  // or whether we leave that to developer to handle.
-                  ui.reset();
-                  return false;
-                }
-              },
-              //signInSuccessUrl: 'localhost:5000',
-              signInOptions: [
-                // Leave the lines as is for the providers you want to offer your users.
-                firebase.auth.EmailAuthProvider.PROVIDER_ID
-              ],
-              tosUrl: "<your-tos-url>",
-              privacyPolicyUrl: function() {
-                window.location.assign("<your-privacy-policy-url>");
-              }
-            };
-
-            // The start method will wait until the DOM is loaded.
-            ui.start("#firebaseui-auth-container", uiConfig);
-            // User is signed out.
-          }
-        });
-
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        // User is signed in.
+        console.log(firebase.auth().currentUser.email + " is logged in!");
 
         try {
-          let app = firebase.app();
-          let features = ["auth", "database", "messaging", "storage"].filter(
-            feature => typeof app[feature] === "function"
-          );
-          //document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
+          setTimeout(() => {
+            // get p5js running before calling functions
+            loadData();
+          }, 1000);
         } catch (e) {
           console.error(e);
-          //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
         }
-      });
-    </script>
-  </body>
+      } else {
+        // Initialize the FirebaseUI Widget using Firebase.
+        var ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+        var uiConfig = {
+          callbacks: {
+            signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+              var user = authResult.user;
+              var credential = authResult.credential;
+              var isNewUser = authResult.additionalUserInfo.isNewUser;
+              var providerId = authResult.additionalUserInfo.providerId;
+              var operationType = authResult.operationType;
+              // Do something with the returned AuthResult.
+              // Return type determines whether we continue the redirect automatically
+              // or whether we leave that to developer to handle.
+              ui.reset();
+              return false;
+            }
+          },
+          //signInSuccessUrl: 'localhost:5000',
+          signInOptions: [
+            // Leave the lines as is for the providers you want to offer your users.
+            firebase.auth.EmailAuthProvider.PROVIDER_ID
+          ],
+          tosUrl: "<your-tos-url>",
+          privacyPolicyUrl: function() {
+            window.location.assign("<your-privacy-policy-url>");
+          }
+        };
+
+        // The start method will wait until the DOM is loaded.
+        ui.start("#firebaseui-auth-container", uiConfig);
+        // User is signed out.
+      }
+    });
+
+    // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
+    // firebase.messaging().requestPermission().then(() => { });
+    // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
+    //
+    // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+
+    try {
+      let app = firebase.app();
+      let features = ["auth", "database", "messaging", "storage"].filter(
+        feature => typeof app[feature] === "function"
+      );
+      //document.getElementById('load').innerHTML = `Firebase SDK loaded with ${features.join(', ')}`;
+    } catch (e) {
+      console.error(e);
+      //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
+    }
+  });
+  </script>
+</body>
 </html>

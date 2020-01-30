@@ -2,11 +2,13 @@ let p5sketch; //  global reference to P5js sketch
 
 loadData = function() {
   p5sketch = new p5(sketch, "main");
-
+  getMatrixFromDatabase();
+  /*
   let tempMatrix =
     "ff0000551a8bff0000ff0100551a8b551a8bff0000ff0100ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ffff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff000000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff0000ff";
   let tempSize = [9, 13];
   p5sketch.updateMatrix("something", tempSize, tempMatrix, false);
+  */
 };
 
 getMatrixFromDatabase = function() {
@@ -17,14 +19,7 @@ getMatrixFromDatabase = function() {
     .ref("users/" + user.uid)
     .once("value")
     .then(function(snapshot) {
-      if (snapshot.val() == null) {
-        // create new user
-
-        //populate matrix array (just once?)
-        let temp = [];
-        for (let i = 0; i < 120; i++) temp[i] = [0, 0, 0, 0];
-        console.log(JSON.stringify(temp));
-      } else {
+      if (snapshot.val() != null) {
         return snapshot.val().matrixref;
       }
     })
@@ -37,7 +32,8 @@ getMatrixFromDatabase = function() {
         return firebase
           .database()
           .ref("matrices/" + matrixref)
-          .on("value", function(snapshot) {
+          .once("value")
+          .then(function(snapshot) {
             let content = snapshot.val();
 
             p5sketch.updateMatrix(
@@ -46,10 +42,27 @@ getMatrixFromDatabase = function() {
               content.LED
             );
 
-            let matrixsize = content.size;
+            p5sketch.updateZones(content.zones);
+
           });
       }
     });
+};
+updateMatrixZone = function(matrixref, updates) {
+
+  return firebase
+    .database()
+    .ref("matrices/" + matrixref)
+    .update(
+      updates,
+      function(error) {
+        if (error) {
+          alert("Data could not be saved." + error);
+        } else {
+          alert("Data saved successfully.");
+        }
+      }
+    );
 };
 
 updateMatrixDatabase = function(matrixref, newMatrixString) {
