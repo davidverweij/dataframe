@@ -203,13 +203,23 @@ let sketch = function(p) {
 
       ZONES[lastZone] = {
         LEDS: paths[lastZone].join(""),
-        color: "000000",
+        color: "#000000",
         trigger: "nothing"
       };
 
       let updatefield = "/zones/" + lastZone + "/";
 
       updateMatrixZone(LEDmatrixName, { [updatefield]: ZONES[lastZone] });
+
+      paths.push([...ZONES[lastZone].LEDS]); // assuming we have zone 0, 1, 2 etc...
+      colors.push(ZONES[lastZone].color);
+      triggers.push(ZONES[lastZone].trigger);
+      let opt = document.createElement("option");
+      opt.appendChild(document.createTextNode(lastZone));
+      opt.value = lastZone;
+      zonesmodeSELECT.appendChild(opt);
+      zonesmodeSELECT.value = lastZone;
+
     });
     updatemodeBUTTON.addEventListener("click", () => {
       p.updateFirebase();
@@ -297,8 +307,16 @@ let sketch = function(p) {
   };
 
   p.updateFirebase = function() {
-    p.updateLEDstring();
+    //p.updateLEDstring();
     //updateMatrixDatabase(LEDmatrixName, LEDmatrixString);
+    let updates = {};
+    for(let i = 0; i < paths.length; i++){
+      ZONES[i].LEDS = paths[i].join("");
+      ZONES[i].color = colors[i];
+      ZONES[i].trigger = triggers[i];
+      updates["/zones/" + i + "/"] = ZONES[i];
+    }
+    updateMatrixZone(LEDmatrixName, updates);
   };
 
   p.renderZone = function(chosenZone) {
@@ -319,28 +337,26 @@ let sketch = function(p) {
           let r = 0,
             g = 0,
             b = 0;
-            console.log(mixcolor);
 
           for (let i3 = 0; i3 < mixlength; i3++) {
             // start at 1, skip the #
             r =
               r +
-              p.decodeNibble(mixcolor[i3][1]) * 16 +
-              p.decodeNibble(mixcolor[i3][2]);
+              p.decodeNibble(mixcolor[i3].charCodeAt(1)) * 16 +
+              p.decodeNibble(mixcolor[i3].charCodeAt(2));
             g =
               g +
-              p.decodeNibble(mixcolor[i3][3]) * 16 +
-              p.decodeNibble(mixcolor[i3][4]);
+              p.decodeNibble(mixcolor[i3].charCodeAt(3)) * 16 +
+              p.decodeNibble(mixcolor[i3].charCodeAt(4));
             b =
               b +
-              p.decodeNibble(mixcolor[i3][5]) * 16 +
-              p.decodeNibble(mixcolor[i3][6]);
+              p.decodeNibble(mixcolor[i3].charCodeAt(5)) * 16 +
+              p.decodeNibble(mixcolor[i3].charCodeAt(6));
           }
           r = parseInt(r / mixlength);
           b = parseInt(b / mixlength);
           g = parseInt(g / mixlength);
           let result = '#' + fullColorHex(r, g, b);
-          console.log(result);
           LEDS[i].updateColorHex(result);
 
           LEDS[i].highlighting(true);
@@ -359,9 +375,9 @@ let sketch = function(p) {
   };
 
   p.decodeNibble = function(value) {
-    if (value >= "0" && value <= "9") return value - "0";
-    if (value >= "A" && value <= "Z") return value - "A";
-    if (value >= "a" && value <= "z") return value - "a";
+    if (value >= 48 && value <= 57) return value - 48;
+    if (value >= 65 && value <= 90) return value - 65;
+    if (value >= 97 && value <= 122) return value - 97;
     return -1;
   };
 
@@ -387,6 +403,7 @@ let sketch = function(p) {
     zonesmodeSELECT.value = -1;
     editorBLOCK.style.display = "none";
     statusTEXT.innerHTML = "ALL ZONES";
+    p.renderZone(currentPath);
   };
 
   p.updateZones = function(zonesData) {
@@ -400,7 +417,7 @@ let sketch = function(p) {
       for (let property in ZONES) {
         zonecount++;
         paths.push([...ZONES[property].LEDS]); // assuming we have zone 0, 1, 2 etc...
-        colors.push("#" + ZONES[property].color);
+        colors.push(ZONES[property].color);
         triggers.push(ZONES[property].trigger);
       }
       if (zonecount > -1) {
