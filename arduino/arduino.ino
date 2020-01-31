@@ -29,10 +29,11 @@
 //  #define FIREBASE_AUTH "YOUR_FIREBASE_DATABASE_SECRET"
 //  #define WIFI_SSID "YOUR_WIFI_AP"
 //  #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-//  #define updatepath "/PATH/TO/UPDATE/UNIX TIME/FLAG"
-//  #define LEDpath "/PATH/TO/STRING/FOR/ALL/LEDS"
 //
 //  arduino_secrets.h is added to .gitignore
+
+// path for this matrix to listen to
+String path = "/matrices/tell-degree-stop/";
 
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
@@ -76,7 +77,7 @@ void setup()
       matrix[i][j] = 0;
     }
   }
-  
+
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
@@ -90,13 +91,13 @@ void setup()
     Serial.print(".");
 
     // LED strip search for wifi animation
-    strip.setPixelColor(counter, strip.Color(0,0,0,0)); 
-    counter = (counter+1)%117;
-    strip.setPixelColor(counter, strip.Color(0,0,0,100));
+    strip.setPixelColor(counter, strip.Color(0, 0, 0, 0));
+    counter = (counter + 1) % 117;
+    strip.setPixelColor(counter, strip.Color(0, 0, 0, 100));
     strip.show();
     delay(300);
   }
-  
+
   Serial.println();
   Serial.print("IoTCanvas Database ID: ");
   Serial.println(FIREBASE_ID);
@@ -108,6 +109,17 @@ void setup()
   //Provide the autntication data
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH, WIFI_SSID, WIFI_PASSWORD);
   Firebase.reconnectWiFi(true);
+
+  /* ADDED TO MAINTAIN STREAM */
+
+  if (!Firebase.beginStream(firebaseData, path + "updated"))
+  {
+    Serial.println("------Can't begin stream connection------");
+    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println();
+  }
+
+  /* --- END OF ADDED  */
 
 }
 
@@ -121,13 +133,42 @@ void loop()
     potpinValFloat = (float) potpinVal / 1023;
     prev_potpinVal = potpinVal;
     updateMatrix();
-    
+
   }
 
-  if (millis() - getDataPrevMillis > getDataThreshold) {
+  /* ADDED TO MAINTAIN STREAM */
+  if (!Firebase.readStream(firebaseData))
+  {
+    Serial.println("Can't read stream data");
+    Serial.println("REASON: " + firebaseData.errorReason());
+    Serial.println();
+  }
+
+  if (firebaseData.streamTimeout())
+  {
+    Serial.println("Stream timeout, resume streaming...");
+    Serial.println();
+  }
+
+  if (firebaseData.streamAvailable())
+  {
+    if (firebaseData.dataType() == "int") {
+      int updatedOn = firebaseData.intData();
+      if (updatedOn > lastDatabaseChange) {
+        getNewData = true;
+        lastDatabaseChange = updatedOn;
+        DUMP(lastDatabaseChange);
+      }
+    }
+  }
+  /* ---- END OF ADDED */
+
+  /*
+
+    if (millis() - getDataPrevMillis > getDataThreshold) {
     getDataPrevMillis = millis();
 
-    if (Firebase.getInt(firebaseData, updatepath))
+    if (Firebase.getInt(firebaseData, path + "updated"))
     {
       if (firebaseData.dataType() == "int") {
         int updatedOn = firebaseData.intData();
@@ -138,14 +179,15 @@ void loop()
         }
       }
     }
-  }
+    }
+  */
 
   if (getNewData)
   {
     getNewData = false;
 
 
-    if (Firebase.getString(firebaseData, LEDpath))
+    if (Firebase.getString(firebaseData, path + "LED"))
     {
 
       if (firebaseData.dataType() == "string") {
@@ -183,6 +225,15 @@ void loop()
       Serial.println();
       if (firebaseData.bufferOverflow())  Serial.println("BUFFER OVERFLOW");
     }
+
+    /* ADDED TO MAINTAIN STREAM */
+    if (!Firebase.beginStream(firebaseData, path + "updated"))
+    {
+      Serial.println("------Can't begin stream connection------");
+      Serial.println("REASON: " + firebaseData.errorReason());
+      Serial.println();
+    }
+    /* --- END OF ADD */
 
   }
 }
