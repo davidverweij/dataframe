@@ -204,6 +204,15 @@ void loop()
           matrix[i][0] = decodeNibble(in[offset + 0]) * 16 + decodeNibble(in[offset + 1]);
           matrix[i][1] = decodeNibble(in[offset + 2]) * 16 + decodeNibble(in[offset + 3]);
           matrix[i][2] = decodeNibble(in[offset + 4]) * 16 + decodeNibble(in[offset + 5]);
+          if (i < 2) {
+            Serial.print("R G B = ");
+            Serial.print(matrix[i][0]);
+            Serial.print(" ");
+            Serial.print(matrix[i][1]);
+            Serial.print(" ");
+            Serial.print(matrix[i][2]);
+            Serial.println(" ");
+          }
           //led[i][3] = 0;  // we work without white at the moment
         }
 
@@ -241,7 +250,7 @@ void loop()
 void updateMatrix() {
   for (int i = 0; i < totalLEDs; i++) {
     for (int j = 0; j < 4; j++) {
-      strip.setPixelColor(i, strip.Color((int) (potpinValFloat * matrix[i][0]) , (int) (potpinValFloat * matrix[i][1]), (int) (potpinValFloat * matrix[i][2]), (int) (potpinValFloat * matrix[i][3])));
+      strip.setPixelColor(i,(int) (potpinValFloat * matrix[i][0]) , (int) (potpinValFloat * matrix[i][1]), (int) (potpinValFloat * matrix[i][2]), (int) (potpinValFloat * matrix[i][3]));
     }
   }
   strip.show();
@@ -259,7 +268,7 @@ boolean isValidNumber(String str) {
 
 int decodeNibble(char value) {
   if (value >= '0' && value <= '9') return value - '0';
-  if (value >= 'A' && value <= 'Z') return value - 'A';
-  if (value >= 'a' && value <= 'z') return value - 'a';
+  if (value >= 'A' && value <= 'Z') return value - 'A' + 10;
+  if (value >= 'a' && value <= 'z') return value - 'a' + 10;
   return -1;
 }

@@ -209,7 +209,7 @@ let sketch = function(p) {
 
       let updatefield = "/zones/" + lastZone + "/";
 
-      updateMatrixZone(LEDmatrixName, { [updatefield]: ZONES[lastZone] });
+      updateMatrix(LEDmatrixName, { [updatefield]: ZONES[lastZone] });
 
       paths.push([...ZONES[lastZone].LEDS]); // assuming we have zone 0, 1, 2 etc...
       colors.push(ZONES[lastZone].color);
@@ -303,6 +303,7 @@ let sketch = function(p) {
     for (let i = 0; i < LEDS.length; i++) {
       stringArray.push(LEDS[i].toString());
     }
+    LEDmatrixString = stringArray.join("");
     //console.log(stringArray.join(""));
   };
 
@@ -316,7 +317,12 @@ let sketch = function(p) {
       ZONES[i].trigger = triggers[i];
       updates["/zones/" + i + "/"] = ZONES[i];
     }
-    updateMatrixZone(LEDmatrixName, updates);
+
+    p.renderZone(-1);
+    p.updateLEDstring();
+    updates["/LED/"] = LEDmatrixString;
+    updates["/updated/"] = moment().unix();
+    updateMatrix(LEDmatrixName, updates);
   };
 
   p.renderZone = function(chosenZone) {

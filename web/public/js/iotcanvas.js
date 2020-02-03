@@ -48,7 +48,7 @@ getMatrixFromDatabase = function() {
       }
     });
 };
-updateMatrixZone = function(matrixref, updates) {
+updateMatrix = function(matrixref, updates) {
 
   return firebase
     .database()
@@ -65,7 +65,7 @@ updateMatrixZone = function(matrixref, updates) {
     );
 };
 
-updateMatrixDatabase = function(matrixref, newMatrixString) {
+updateMatrixDatabase = function(matrixref, updates) {
   return firebase
     .database()
     .ref("matrices/" + matrixref)

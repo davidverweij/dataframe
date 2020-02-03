@@ -115,7 +115,8 @@ class LED {
   }
 
   toString() {
-    return this.color.toString("#rrggbb").substring(1);
+    if (this.highlight) return this.color.toString("#rrggbb").substring(1);
+    else return "000000";
   }
 
   connect(interactivity) {
