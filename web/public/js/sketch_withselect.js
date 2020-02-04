@@ -10,8 +10,8 @@ TODOs:
 */
 
 let sketch = function(p) {
-  let paths = [],
-    colors = [],
+  let paths = [], backupPath = [],
+    colors = [], backupcolor,
     triggers = [],
     LEDS = []; // All the paths (or zones), leds etc
 
@@ -21,7 +21,7 @@ let sketch = function(p) {
   let previous_selecting = 0; // to see if we have a new click
   let selectingmode = 0; // based on drawmode toggle button
   let selectingPath = 0; // selectable zones will be LEDmatrixLength long (adjusting values in an array is more efficient than adding / splicing)
-  let currentPath = -1; // the path / zone we are currently working with.
+  let currentPath = -2; // the path / zone we are currently working with. -2 = live view, -1 = mixed view, other numbers are zones
 
   let lastDrawn = 0; // keep track of when drawn
   let drawnRate = 100; // 'framerate' for drawing LEDs
@@ -44,20 +44,32 @@ let sketch = function(p) {
 
   let resizeMatrix; // variable to set timeout to recalc matrix (with delay)
 
-  let totalzonesTEXT,
-    zonesmodeSELECT,
-    zoneselectorBLOCK,
-    noZonesBLOCK,
-    addZoneBUTTON,
-    updatemodeBUTTON,
-    editorBLOCK,
-    addLEDRADIO,
-    removeLEDRADIO,
-    selectallBUTTON,
-    deselectallBUTTON,
-    ifthisSELECT,
-    drawcolorCOLORPICKER,
-    statusTEXT; // all DOM elements and listeners
+  let m1,
+    m11_help,
+    m12_edit,
+    m2,
+    m21_back,
+    m22_addzone,
+    m23_editzone,
+    m23_zones = [],
+    m3,
+    m30_cancel,
+    m31_back,
+    m32_leds,
+    m33_addleds,
+    m34_removeleds,
+    m35_selectall,
+    m36_deselectall,
+    m37_color,
+    m37_color_input,
+    m38_trigger,
+    m39_deletezone,
+    mstatus; // all interface buttons
+
+  let statusLive =
+    "<i class='fa fa-circle text-danger blink'></i>&nbsp; live view ";
+  let statusZone = "<i class='fas fa-edit blink'></i> zone ";
+  let statusAllZones = "<i class='fas fa-eye blink'></i> all zones ";
 
   p.setup = function() {
     WINDOWsize = p.getCanvasSize();
@@ -81,7 +93,7 @@ let sketch = function(p) {
       p.drawView();
     }
 
-    if (selecting > 0) {
+    if (selecting > 0 && currentPath > -1) {
       current_point.set(p.mouseX, p.mouseY);
       let distance = current_point.dist(previous_point);
       if (distance > selectmargin) {
@@ -152,44 +164,49 @@ let sketch = function(p) {
   };
 
   p.attachUI = function() {
-    totalzonesTEXT = document.getElementById("totalzones");
-    zonesmodeSELECT = document.getElementById("zonesmode");
-    zoneselectorBLOCK = document.getElementById("zoneselector");
-    noZonesBLOCK = document.getElementById("noZones");
-    addZoneBUTTON = document.getElementById("addZone");
-    updatemodeBUTTON = document.getElementById("updatemode");
-    editorBLOCK = document.getElementById("editor");
-    addLEDRADIO = document.getElementById("addLED");
-    removeLEDRADIO = document.getElementById("removeLED");
-    selectallBUTTON = document.getElementById("selectall");
-    deselectallBUTTON = document.getElementById("deselectall");
-    ifthisSELECT = document.getElementById("ifthis");
-    drawcolorCOLORPICKER = document.getElementById("drawcolor");
-    statusTEXT = document.getElementById("status");
+    m1 = document.getElementById("menu1");
+    m11_help = document.getElementById("menu1_1");
+    m12_edit = document.getElementById("menu1_2");
+    m2 = document.getElementById("menu2");
+    m21_back = document.getElementById("menu2_1");
+    m22_addzone = document.getElementById("menu2_2");
+    m23_editzone = document.getElementById("menu2_3");
+    m3 = document.getElementById("menu3");
+    m30_cancel = document.getElementById("menu3_0");
+    m31_back = document.getElementById("menu3_1");
+    m32_leds = document.getElementById("menu3_2");
+    m33_addleds = document.getElementById("menu3_3");
+    m34_removeleds = document.getElementById("menu3_4");
+    m35_selectall = document.getElementById("menu3_5");
+    m36_deselectall = document.getElementById("menu3_6");
+    m37_color = document.getElementById("menu3_7");
+    m37_color_input = document.getElementById("menu3_7_input");
+    m38_trigger = document.getElementById("menu3_8");
+    m39_deletezone = document.getElementById("menu3_9");
+    mstatus = document.getElementById("status");
 
     selectingmode = 0;
-    zoneselectorBLOCK.style.display = "none";
-    noZonesBLOCK.style.display = "none";
-    editorBLOCK.style.display = "none";
-    statusTEXT.innerHTML = "LOADING";
 
-    zonesmodeSELECT.addEventListener("change", () => {
-      // change to selecting zones here!
-      currentPath =
-        zonesmodeSELECT.options[zonesmodeSELECT.selectedIndex].value;
-      if (currentPath > -1) {
-        editorBLOCK.style.display = "inherit";
-        statusTEXT.innerHTML = "ZONE " + currentPath;
-        ifthisSELECT.value = triggers[currentPath];
-        drawcolorCOLORPICKER.value = colors[currentPath];
-      } else {
-        editorBLOCK.style.display = "none";
-        statusTEXT.innerHTML = "ALL ZONES";
-      }
-      p.renderZone(currentPath);
+    m11_help.addEventListener("click", () => {
+      alert("Help function is not build yet! Sorry.");
     });
 
-    addZoneBUTTON.addEventListener("click", () => {
+    m12_edit.addEventListener("click", () => {
+      m1.style.display = "none";
+      m2.style.display = "";
+      mstatus.innerHTML = statusAllZones;
+      p.renderZone(-1);
+    });
+
+    m21_back.addEventListener("click", () => {
+      m1.style.display = "";
+      m2.style.display = "none";
+      currentPath = -2;
+      mstatus.innerHTML = statusLive;
+      p.renderZone(-2);
+    });
+
+    m22_addzone.addEventListener("click", () => {
       console.log("Add a zone!");
       let lastZone = -1;
       for (let zone in ZONES) {
@@ -214,39 +231,58 @@ let sketch = function(p) {
       paths.push([...ZONES[lastZone].LEDS]); // assuming we have zone 0, 1, 2 etc...
       colors.push(ZONES[lastZone].color);
       triggers.push(ZONES[lastZone].trigger);
-      let opt = document.createElement("option");
-      opt.appendChild(document.createTextNode(lastZone));
-      opt.value = lastZone;
-      zonesmodeSELECT.appendChild(opt);
-      zonesmodeSELECT.value = lastZone;
 
+      p.updateUI();
     });
-    updatemodeBUTTON.addEventListener("click", () => {
+
+    m30_cancel.addEventListener("click", () => {
+      paths[currentPath] = backupPath.slice();
+      colors[currentPath] = backupcolor;
+      currentPath = -1;
+      m2.style.display = "";
+      m3.style.display = "none";
+      mstatus.innerHTML = statusAllZones;
+      p.renderZone(-1);
+    });
+
+    m31_back.addEventListener("click", () => {
       p.updateFirebase();
-      console.log("Update Database!");
+      m2.style.display = "";
+      m3.style.display = "none";
+      mstatus.innerHTML = statusAllZones;
+      currentPath = -1;
+      p.renderZone(-1);
     });
-    addLEDRADIO.addEventListener("change", () => {
-      console.log("Draw mode ADD");
+    m33_addleds.addEventListener("click", () => {
       selectingmode = 0;
+      m33_addleds.classList.add("highlight");
+      m34_removeleds.classList.remove("highlight");
     });
-    removeLEDRADIO.addEventListener("change", () => {
-      console.log("Draw mode REMOVE");
+    m34_removeleds.addEventListener("click", () => {
       selectingmode = 1;
+      m33_addleds.classList.remove("highlight");
+      m34_removeleds.classList.add("highlight");
     });
-    selectallBUTTON.addEventListener("click", () => {
-      console.log("add all LEDS!");
+    m35_selectall.addEventListener("click", () => {
+      let length = paths[currentPath].length;
+      for (let i = 0; i < length; i++) {
+        paths[currentPath][i] = 1;
+      }
+      p.renderZone(currentPath);
     });
-    deselectallBUTTON.addEventListener("click", () => {
-      console.log("remove all LEDS!");
+    m36_deselectall.addEventListener("click", () => {
+      let length = paths[currentPath].length;
+      for (let i = 0; i < length; i++) {
+        paths[currentPath][i] = 0;
+      }
+      p.renderZone(currentPath);
     });
-    ifthisSELECT.addEventListener("change", () => {
-      // change to selecting zones here!
-      let chosenTrigger =
-        ifthisSELECT.options[ifthisSELECT.selectedIndex].value;
-      console.log("chosen trigger = " + chosenTrigger);
+    m37_color.addEventListener("click", () => {
+      m37_color_input.click();
     });
-    drawcolorCOLORPICKER.addEventListener("input", () => {
-      selectingcolor = drawcolor.value;
+    m37_color_input.addEventListener("input", () => {
+      selectingcolor = m37_color_input.value;
+      m37_color.style.borderColor = selectingcolor;
       colors[currentPath] = selectingcolor;
       if (currentPath > -1) {
         for (let i = 0; i < paths[currentPath].length; i++) {
@@ -254,6 +290,17 @@ let sketch = function(p) {
             LEDS[i].updateColorHex(selectingcolor);
           }
         }
+      }
+    });
+    m38_trigger.addEventListener("click", () => {
+      alert("This functionality is not set yet - sorry!");
+    });
+    m39_deletezone.addEventListener("click", () => {
+      let r = confirm(
+        "Are you sure you want to delete this zone? This cannot be undone."
+      );
+      if (r == true) {
+        alert("This functionality is not set yet - sorry!");
       }
     });
   };
@@ -311,7 +358,7 @@ let sketch = function(p) {
     //p.updateLEDstring();
     //updateMatrixDatabase(LEDmatrixName, LEDmatrixString);
     let updates = {};
-    for(let i = 0; i < paths.length; i++){
+    for (let i = 0; i < paths.length; i++) {
       ZONES[i].LEDS = paths[i].join("");
       ZONES[i].color = colors[i];
       ZONES[i].trigger = triggers[i];
@@ -326,7 +373,14 @@ let sketch = function(p) {
   };
 
   p.renderZone = function(chosenZone) {
-    if (chosenZone == -1) {
+    if (chosenZone == -2) {         // show live View
+      let pointer = 0;
+      for (let i = 0; i < LEDmatrixLength; i++) {
+          LEDS[i].updateColorHex("#" + LEDmatrixString.substring(pointer, pointer+6));
+          LEDS[i].highlighting(true);
+          pointer+= 6;
+      }
+    } else if (chosenZone == -1) {  // show all zones together
       let totalpaths = paths.length;
       for (let i = 0; i < LEDmatrixLength; i++) {
         let mixcolor = [];
@@ -362,7 +416,7 @@ let sketch = function(p) {
           r = parseInt(r / mixlength);
           b = parseInt(b / mixlength);
           g = parseInt(g / mixlength);
-          let result = '#' + fullColorHex(r, g, b);
+          let result = "#" + fullColorHex(r, g, b);
           LEDS[i].updateColorHex(result);
 
           LEDS[i].highlighting(true);
@@ -389,27 +443,45 @@ let sketch = function(p) {
 
   p.updateUI = function() {
     let totalzones = paths.length;
-    totalzonesTEXT.innerHTML = totalzones;
 
-    zoneselectorBLOCK.style.display = "inherit";
-    noZonesBLOCK.style.display = "none";
-
-    for (let i = -1; i < totalzones; i++) {
-      let opt = document.createElement("option");
-      if (i == -1) {
-        opt.appendChild(document.createTextNode("show all"));
-        opt.value = -1;
-      } else {
-        opt.appendChild(document.createTextNode(i));
-        opt.value = i;
-      }
-      zonesmodeSELECT.appendChild(opt);
+    let zonebuttons = document.getElementsByClassName("zonebuttons"); // remove all current zonebuttons, and rebuild
+    while (zonebuttons[0]) {
+      zonebuttons[0].parentNode.removeChild(zonebuttons[0]);
     }
 
-    zonesmodeSELECT.value = -1;
-    editorBLOCK.style.display = "none";
-    statusTEXT.innerHTML = "ALL ZONES";
-    p.renderZone(currentPath);
+    if (totalzones > 0) {
+      for (let i = 0; i < totalzones; i++) {
+        let zbutton = document.createElement("div");
+        zbutton.textContent = i;
+        zbutton.setAttribute(
+          "class",
+          "menudiv menubutton menudark zonebuttons"
+        );
+        menu2.appendChild(zbutton);
+        zbutton.addEventListener("click", () => {
+          m2.style.display = "none";
+          m3.style.display = "";
+          mstatus.innerHTML = statusZone + i;
+          currentPath = i;
+          backupPath = paths[currentPath].slice();  // in case the user presses 'cancel'.
+          backupcolor = colors[currentPath];
+          p.renderZone(i);
+
+          selectingcolor = colors[currentPath];
+          m37_color_input.value = selectingcolor;
+          m37_color.style.borderColor = selectingcolor;
+
+
+        });
+      }
+      if (currentPath > -2){
+        mstatus.innerHTML = statusAllZones;
+      } else {    // we are in the live view
+        mstatus.innerHTML = statusLive;
+      }
+      p.renderZone(currentPath);
+
+    }
   };
 
   p.updateZones = function(zonesData) {
@@ -429,11 +501,6 @@ let sketch = function(p) {
       if (zonecount > -1) {
         p.updateUI();
       }
-    } else {
-      console.log("zones data is empty - assuming no zones stored");
-      totalzonesTEXT.innerHTML = 0;
-      zoneselectorBLOCK.style.display = "none";
-      noZonesBLOCK.style.display = "inherit";
     }
   };
 
@@ -509,6 +576,7 @@ let sketch = function(p) {
           }
         }
       }
+      p.renderZone(currentPath);
     } else {
       console.log(new_string);
       if (new_string.localeCompare(LEDmatrixString) != 0) {

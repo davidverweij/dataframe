@@ -20,55 +20,51 @@
 
   <!-- Firebase UI setup for authenticating users -->
   <script src="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.js"></script>
-  <link
-  type="text/css"
-  rel="stylesheet"
-  href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css"
-  />
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.3.0/firebase-ui-auth.css"/>
+  <!-- font awesome font and style -->
+  <link rel="stylesheet" type="text/css" href="css/fontawesome.css"/>
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
 
-  <link rel="stylesheet" type="text/css" href="style.css" />
   <script src="js/p5.js"></script>
 </head>
 <body>
   <div id="firebaseui-auth-container"></div>
-  <!-- will be removed once authenticated -->
-  <div class="title"><p>IoT Canvas Prototype</p></div>
-  <div class="menu flex">
-    <label>You have </label>
-    <span id="totalzones">_</span>
-    <label>zones</label>
-    <div id="zoneselector">
-      <label>Select Zone:</label>
-      <select id="zonesmode"></select>
+  <div class="header">
+    <div id="menu1" class="menu ui">
+      <div class="logo">
+        <p>IoT Canvas</p>
+      </div>
+      <div id="menu1_1" class="menudiv menubutton"><p>Help&nbsp;<i class="fas fa-question-circle"></i></p></div>
+      <div id="menu1_2" class="menudiv menubutton"><p>Edit&nbsp;<i class="fas fa-edit"></i></p></div>
     </div>
-    <div>
-      <label id="noZones" style="display:none;">No zones yet. Add one:</label>
-      <input id="addZone" type="button" value="New Zone" />
+    <div id="menu2" class="menu" style="display:none;">
+      <div class="logo">
+        <p>IoT Canvas</p>
+      </div>
+      <div id="menu2_1" class="menudiv menubutton"><p>Back to Live View &nbsp;<i class="fas fa-level-up-alt"></i></p></div>
+      <div id="menu2_2" class="menudiv menubutton"><p>Add Zone&nbsp;<i class="fa fa-plus"></i></p></div>
+      <div id="menu2_3" class="menudiv menudark"><p>Edit Zone&nbsp;</p></div>
     </div>
-    <input id="updatemode" type="button" value="Update Database" />
-  </div>
-  <div class="editor flex">
-    <div id="editor" style="display:none;" class="flex">
-      <label>Add LEDs:</label>
-      <input id="addLED" name="addremove" type="radio" check="checked" />
-      <label>, or Remove LEDs:</label>
-      <input id="removeLED" name="addremove" type="radio" />
-      <input id="selectall" type="button" value="Select All" />
-      <input id="deselectall" type="button" value="Deselect All" />
-      <label>FUNCTIONALITY: </label>
-      <label>If</label>
-      <select id="ifthis">
-        <option value="email">email</option>
-        <option value="phone">phone</option>
-        <option value="rain">rain</option>
-        <option value="nothing">nothing</option>
-      </select>
-      <label>Then turn (color): </label>
-      <input id="drawcolor" type="color" value="#ff0000" />
+    <div id="menu3" class="menu" style="display:none;">
+      <div class="logo">
+        <p>IoT Canvas</p>
+      </div>
+      <div id="menu3_0" class="menudiv menubutton"><p>Cancel&nbsp;<i class="fas fa-window-close"></i></p></div>
+      <div id="menu3_1" class="menudiv menubutton"><p>Back & Save&nbsp;<i class="fas fa-level-up-alt"></i></p></div>
+      <div id="menu3_2" class="menudiv menudark"><p>LEDS&nbsp;</p></div>
+      <div id="menu3_3" class="menudiv menubutton menudark highlight"><i class="fa fa-plus"></i></div>
+      <div id="menu3_4" class="menudiv menubutton menudark"><i class="fa fa-minus"></i></div>
+      <div id="menu3_5" class="menudiv menubutton menudark"><i class="fa fa-border-all"></i></div>
+      <div id="menu3_6" class="menudiv menubutton menudark"><i class="fa fa-border-none"></i></div>
+      <div id="menu3_7" class="menudiv menubutton menudark"><i class="fa fa-palette"></i></div>
+      <input id="menu3_7_input" type="color" value="#ff0000" style="display:none;"/>
+      <div id="menu3_8" class="menudiv menubutton"><p>Trigger&nbsp;<i class="fa fa-satellite-dish"></i></p></div>
+      <div id="menu3_9" class="menudiv menubutton"><p>Delete Zone&nbsp;<i class="fa fa-trash"></i></p></div>
     </div>
   </div>
-  <div id="main"></div>
-  <div class="status"><p>currently showing: <span id="status">xx</span></p></div>
+  <div id="main">
+    <span id="status">loading ...</span>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
   <script src="js/LEDS.js"></script>
@@ -146,6 +142,6 @@
       //document.getElementById('load').innerHTML = 'Error loading the Firebase SDK, check the console.';
     }
   });
-  </script>
+</script>
 </body>
 </html>
