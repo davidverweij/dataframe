@@ -8,6 +8,11 @@ firebase-debug.log*
 
 # sensitivedata
 arduino/arduino_secrets.h
+raspi/raspi_secrets.py
+
+#raspberry environments
+__pycache__/
+env/
 
 # Firebase cache
 .firebase/
