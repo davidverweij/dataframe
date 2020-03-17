@@ -20,6 +20,7 @@ import time                      # timer helper functions
 import json, re                  # json and regex helper libraries
 import requests.exceptions       # error types
 import pyrebase                  # Firebase database helper library
+import urllib                    # quick and easy url methods
 
 system = platform.system() is "Linux"  # Linux: "Linux", Mac: "Darwin", Windows: "Windows"
 print("Running IotCanvas.py on a ", platform.system(), " operated platform")
@@ -40,10 +41,19 @@ db_connected = False
 stream_running = False
 last_db_refresh = 0
 ledmatrix = [9,13]
+internet_status = False
 
 # ---
 # HELPER FUNCTIONS
 # ---
+
+def getInternetStatus():
+    try:
+        url = "https://www.google.com"
+        urllib.urlopen(url)
+        internet_status = True
+    except:
+        internet_status = False
 
 def refreshToken():
     user = auth.refresh(user['refreshToken'])

@@ -34,20 +34,25 @@ Followed this guide: https://thisdavej.com/create-a-lightweight-raspberry-pi-sys
 ## SYSTEMD unit file to run at boot
 
 Add a file called 'dataframe.service' to /lib/systemd/system/:
-
-`[Unit]
+`
+[Unit]
 Description=DataFrame running Service
 After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/usr/bin/python /home/pi/dataframe.py &>> /home/pi/dataframe_output.log
+ExecStart=/usr/bin/python3 -u /home/pi/dataframe.py
+StandardOutput = append:/home/pi/dataframe_output.log
+StandardError = append:/home/pi/dataframe_error.log
+Restart=always
 
 [Install]
-WantedBy=multi-user.target`
+WantedBy=multi-user.target
+
+`
 
 Ensure proper read-write rights with
 `sudo chmod 644 /lib/systemd/system/sample.service `
 and add it to the boot sequence with
-`sudo systemctl daemon-reload
-sudo systemctl enable dataframe.service`
+`sudo systemctl daemon-reload`
+`sudo systemctl enable dataframe.service`
