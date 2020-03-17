@@ -28,3 +28,4 @@ Followed this guide: https://thisdavej.com/create-a-lightweight-raspberry-pi-sys
 - Python Firebase wrapper [Pyrebase] (https://github.com/thisbejim/Pyrebase)
 - Adafruit [Circuitpython] (https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi)
 - Adafruit [NeoPixel Library] (https://learn.adafruit.com/neopixels-on-raspberry-pi/raspberry-pi-wiring)
+- [Beautiful Table] (https://pypi.org/project/beautifultable/) for printing tables to the CLI

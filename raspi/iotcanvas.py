@@ -13,13 +13,20 @@
 
 
 import sys
+import platform                   # to determine which system we are running on
 import time                 # timer helper functions
 import json, re             # json and regex helper libraries
 import requests.exceptions   # error types
 import pyrebase             # Firebase database helper library
-import board                # GPIO helper functions - code must be run as root for GPIO access
-import neopixel             # neopixel helper library
 
+system = platform.system() == "Linux"  # Linux: "Linux", Mac: "Darwin", Windows: "Windows"
+print("Running IotCanvas.py on a ", platform.system(), " operated platform")
+
+if system:                 # if we work on a Linux system (assuming only when using a Pi)
+    import board           # GPIO helper functions - code must be run as root for GPIO access
+    import neopixel        # neopixel helper library
+else:
+    from beautifultable import BeautifulTable
 
 # ---
 # HELPER VARIABLES
@@ -59,11 +66,26 @@ def firebase_stream_handler(message):
 
 def updateMatrix():
     matrix_array = re.findall('......', matrix["LED"])     # split string in chuncks of 6
-    for num, led in enumerate(matrix_array):
-        if num < (ledmatrix[0] * ledmatrix[1]):
-            pixels[num] = int(led, 16)
-    pixels.show()
-    time.sleep(1)
+
+    if system:
+        for num, led in enumerate(matrix_array):
+            if num < (ledmatrix[0] * ledmatrix[1]):
+                led_array = re.findall('..', led)           # assuming we have an list of 3
+                pixels[num] = (int(led_array[0], 16),int(led_array[1], 16),int(led_array[2], 16))
+        pixels.show()
+        time.sleep(1)
+    else:                       # for debugging purposes, so we can see in the monitor what is going on
+        table = BeautifulTable()
+        for y in range(0, ledmatrix[0]):
+            # y represents column value
+            column = []
+            for x in range(0, ledmatrix[1]):
+                # x represents row value
+                led = re.findall('..', matrix_array[y + x])      # assuming we have an list of 3
+                ledstr = str(int(led[0], 16)) + "\n" + str(int(led[1], 16)) +  "\n" + str(int(led[2], 16))
+                column.append(ledstr)
+            table.insert_column(y, '', column)
+        print(table)
 
 
 
@@ -95,15 +117,16 @@ except: # catch *all* exceptions
     # show on led matrix, perhaps trigger pi reboot?..
 
 # setup for the LED matrix
-pixel_pin = board.D18       # NeoPixels must be connected to D10, D12, D18 or D21 to work.
-num_pixels = 117            # The number of NeoPixels
-ORDER = neopixel.NEO_RGBW   # change to RGB, GRB, RGBW or GRBW as needed
-pixels = neopixel.NeoPixel(
-    pixel_pin,
-    num_pixels,
-    brightness=0.2,         # set brightness range for colours to work on (0.0 - 1.0)
-    auto_write=False,       # if true, pixels will be updated when value is changed. If False, use show()
-    pixel_order=ORDER)
+if system:
+    pixel_pin = board.D18       # NeoPixels must be connected to D10, D12, D18 or D21 to work.
+    num_pixels = 117            # The number of NeoPixels
+    ORDER = neopixel.NEO_RGBW   # change to RGB, GRB, RGBW or GRBW as needed
+    pixels = neopixel.NeoPixel(
+        pixel_pin,
+        num_pixels,
+        brightness=0.2,         # set brightness range for colours to work on (0.0 - 1.0)
+        auto_write=False,       # if true, pixels will be updated when value is changed. If False, use show()
+        pixel_order=ORDER)
 
 if db_connected:
     matrixref = db.child("users").child(user['userId']).child('matrixref').get(user['idToken']).val()       # get the matrix reference
