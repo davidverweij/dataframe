@@ -29,3 +29,25 @@ Followed this guide: https://thisdavej.com/create-a-lightweight-raspberry-pi-sys
 - Adafruit [Circuitpython] (https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi)
 - Adafruit [NeoPixel Library] (https://learn.adafruit.com/neopixels-on-raspberry-pi/raspberry-pi-wiring)
 - [Beautiful Table] (https://pypi.org/project/beautifultable/) for printing tables to the CLI
+
+
+## SYSTEMD unit file to run at boot
+
+Add a file called 'dataframe.service' to /lib/systemd/system/:
+
+`[Unit]
+Description=DataFrame running Service
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python /home/pi/dataframe.py &>> /home/pi/dataframe_output.log
+
+[Install]
+WantedBy=multi-user.target`
+
+Ensure proper read-write rights with
+`sudo chmod 644 /lib/systemd/system/sample.service `
+and add it to the boot sequence with
+`sudo systemctl daemon-reload
+sudo systemctl enable dataframe.service`
