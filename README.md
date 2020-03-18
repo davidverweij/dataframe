@@ -14,22 +14,27 @@ All-in-one solution which should drive the touchscreen, LEDs and respond to onli
 
 ## setup
 
-Followed this guide: https://thisdavej.com/create-a-lightweight-raspberry-pi-system-with-raspbian-lite/
+Followed [this guide](https://thisdavej.com/create-a-lightweight-raspberry-pi-system-with-raspbian-lite/) to set up Raspian Lite on the Raspberry PI
+Follow [this guide from Pimoroni](https://learn.pimoroni.com/tutorial/sandyj/dot-breakout-assembly) to set up the display
 
 - Raspberry PI 3 A+
 - SSH into the pi with `ssh pi@dataframeproto1.local`
+- DogLCD, specifically the EA DOGM163W-A - connection diagram see [this readme file](https://github.com/Gadgetoid/DogLCD)
 
 
 ## installed dependencies
 
-- Raspbian Lite via [this tutorial] (https://thisdavej.com/create-a-lightweight-raspberry-pi-system-with-raspbian-lite/)
+- Raspbian Lite via [this tutorial](https://thisdavej.com/create-a-lightweight-raspberry-pi-system-with-raspbian-lite/)
 - Install I2C and SPI dependencies
-- Setup up [Network File sharing] (https://magpi.raspberrypi.org/articles/samba-file-server)
-- Python Firebase wrapper [Pyrebase] (https://github.com/thisbejim/Pyrebase)
-- Adafruit [Circuitpython] (https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi)
-- Adafruit [NeoPixel Library] (https://learn.adafruit.com/neopixels-on-raspberry-pi/raspberry-pi-wiring)
-- [Beautiful Table] (https://pypi.org/project/beautifultable/) for printing tables to the CLI
+- Setup up [Network File sharing](https://magpi.raspberrypi.org/articles/samba-file-server)
+- Python Firebase wrapper [Pyrebase](https://github.com/thisbejim/Pyrebase)
+- Adafruit [Circuitpython](https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/installing-circuitpython-on-raspberry-pi)
+- Adafruit [NeoPixel Library](https://learn.adafruit.com/neopixels-on-raspberry-pi/raspberry-pi-wiring)
+- [Beautiful Table](https://pypi.org/project/beautifultable/) for printing tables to the CLI
 
+
+## LCD screen
+- (add description of setup and parts)
 
 ## SYSTEMD unit file to run at boot
 
