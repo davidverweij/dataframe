@@ -10,6 +10,9 @@ firebase-debug.log*
 arduino/arduino_secrets.h
 raspi/raspi_secrets.py
 
+#local resources
+resources/*
+
 #raspberry environments
 __pycache__/
 env/
