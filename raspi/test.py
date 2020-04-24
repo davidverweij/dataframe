@@ -63,22 +63,30 @@ async def doglcd(queue):
     touchscreenstatus = ["Continue", "Up", "Down"]      # to translate back the numbers from the message
     #  lcdsleeptime = 0.2
 
-    # background neopixel setting
-    # pixel_pin = board.D12           # NeoPixels must be connected to D10, D12, D18 or D21 to work.
-    # num_pixels = 117            # The number of NeoPixels
-    # ORDER = neopixel.NEO_RGBW   # change to RGB, GRB, RGBW or GRBW as needed
-    # pixels = neopixel.NeoPixel(
-    #     pixel_pin,
-    #     num_pixels,
-    #     brightness=0.2,         # set brightness range for colours to work on (0.0 - 1.0)
-    #     auto_write=False,       # if true, pixels will be updated when value is changed. If False, use show()
-    #     pixel_order=ORDER)
+    #  NEOPIXEL NOT WORKING YET!! TODO:
+
+
+    pixel_pin = board.D18           # NeoPixels must be connected to D10, D12, D18 or D21 to work.
+    num_pixels = 2            # The number of NeoPixels
+    ORDER = neopixel.GRB   # change to RGB, GRB, RGBW or GRBW as needed
+    pixels = neopixel.NeoPixel(
+        pixel_pin,
+        num_pixels,
+        brightness=0.5,         # set brightness range for colours to work on (0.0 - 1.0)
+        auto_write=False,       # if true, pixels will be updated when value is changed. If False, use show()
+        pixel_order=ORDER)
 
     while True:
         data = await queue.get()        # safely wait for messages in the cue which will indicate what we should represent
         lcd.clear()
         lcdmessage = f"{touchscreenstatus[data.state+1]:<16}"[:16] + "x = " + f"{data.x:<12}"[:13] + "y = " + f"{data.y:<12}"[:13]
         lcd.write(lcdmessage)
+        if data.state is 0:
+            pixels.fill((0,255,0))
+            pixels.show()
+        elif data.state is 1:
+            pixels.fill((0,0,255))
+            pixels.show()
         #
         # for i in range(48):
         #     lcd.set_cursor_offset(i)
