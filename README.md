@@ -1,4 +1,11 @@
-# IoT Canvas / Data Frame
+# IoT Canvas / Data Frame [NOT CONTINUED]
+
+Control a LED matrix using a web-app.
+![the interface to control the LED matrix, zones](resources/images/dataframe_web.png)
+
+Particular attention was given to enable accurate recording of touchpoints in low framerates (due to the use of P5.js canvas) using interpolation.
+
+![Interpolation test](resources/images/interpolation.gif)
 
 # Legacy
 

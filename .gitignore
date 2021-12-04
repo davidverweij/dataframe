@@ -12,6 +12,7 @@ raspi/raspi_secrets.py
 
 #local resources
 resources/*
+!resources/images/
 
 #raspberry environments
 __pycache__/
