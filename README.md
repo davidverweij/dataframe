@@ -5,8 +5,6 @@ Control a LED matrix using a web-app.
 
 Particular attention was given to enable accurate recording of touchpoints in low framerates (due to the use of P5.js canvas) using interpolation.
 
-![Interpolation test](resources/images/interpolation.gif)
-
 # Legacy
 
 This project was initially created with an Arduino MKR1000, in combination with a Web interface that allowed the LED's to be configured. After re-evaluation of the intuitiveness and design requirements, the prototype was deemed to be an all-in-one solution.
